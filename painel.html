@@ -358,7 +358,7 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
       <div class="ph"><div><div class="num">#${p.numero}</div><div class="who">${esc(p.nome)}</div>
         <div class="meta">${tel?`<a href="https://wa.me/${telBR}" target="_blank" rel="noopener">${esc(p.telefone)}</a>`:""}${p.tipo==="extra"?" · venda extra":""}</div></div>
         <span class="st ${p.status}">${STATUS[p.status]}</span></div>
-      <div class="meta"><b style="color:var(--ink)">${p.modo}</b>${p.modo==="Entrega"?` — ${esc(p.endereco)}<br>Frete: ${p.frete_combinar?"<b style=\"color:var(--danger)\">a combinar</b>":`${brl(p.taxa_entrega)}${p.km!=null?` (${String(p.km).replace(".",",")} km)`:""}`}`:""}</div>
+      <div class="meta"><b style="color:var(--ink)">${p.modo}</b>${p.modo==="Entrega"?` — ${esc(p.endereco)}<br>Frete: ${p.frete_gratis?`<b style="color:var(--ok)">grátis</b> (${esc(p.frete_gratis)})`:p.frete_combinar?"<b style=\"color:var(--danger)\">a combinar</b>":`${brl(p.taxa_entrega)}${p.km!=null?` (${String(p.km).replace(".",",")} km)`:""}`}`:""}</div>
       <ul>${p.itens.map(i=>`<li>${i.qtd}× ${esc(i.nome)}${i.opcao?` <small>(${esc(i.opcao)})</small>`:""}${i.obs?`<br><small>Obs: ${esc(i.obs)}</small>`:""}</li>`).join("")}</ul>
       ${p.obs?`<div class="meta">Observação: ${esc(p.obs)}</div>`:""}
       <div class="tot"><span>${esc(p.pagamento)}${p.troco?` · troco p/ ${esc(p.troco)}`:""} · ${p.pago?"pago":"a receber"}</span><span>${brl(p.total)}</span></div>
@@ -489,10 +489,30 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
 
   // ---------- AJUSTES ----------
   function tipoPix(k){ if(!k) return ""; if(k.startsWith("+55")) return "celular"; if(k.includes("@")) return "email"; if(/^\d{11}$/.test(k)) return "cpf"; return "aleatoria"; }
+  function regraHTML(g){
+    const id = g.id;
+    return `<div class="og" data-fg="${id}">
+      <div class="og-h"><input class="input" data-g="nome" value="${esc(g.nome)}" aria-label="Nome da regra" placeholder="Ex: Centro e Cambuí">
+        <label class="toggle" style="font-size:13px"><span>Ativa</span><input type="checkbox" data-g="ativo" ${g.ativo?"checked":""}></label></div>
+      <div class="f2">
+        <div class="fl"><label for="fgb_${id}">Bairros</label><input class="input" id="fgb_${id}" data-g="bairros" value="${esc((g.bairros||[]).join(", "))}" placeholder="Ex: Centro, Cambuí"></div>
+        <div class="fl"><label for="fgc_${id}">CEPs</label><input class="input" id="fgc_${id}" data-g="ceps" value="${esc((g.ceps||[]).map(c=>c.replace(/(\d{5})(\d{3})/,"$1-$2")).join(", "))}" placeholder="Ex: 13086-900"></div>
+      </div>
+      <div class="f2">
+        <div class="fl"><label for="fge_${id}">Ponto de referência</label><input class="input" id="fge_${id}" data-g="endereco" value="${esc(g.endereco)}" placeholder="Ex: PUC-Campinas"><span class="note">${g.endereco?(g.lat!=null?"Encontrado no mapa.":"Ainda não encontrado no mapa; salve para buscar."):"Opcional."}</span></div>
+        <div class="fl"><label for="fgr_${id}">Raio em volta do ponto (km)</label><input class="input" id="fgr_${id}" data-g="raio_km" type="number" step="0.1" min="0" value="${g.raio_km??""}" placeholder="Ex: 0,8"></div>
+      </div>
+      <div class="fl"><span class="l">Só nestes horários</span><div class="filters">${JANELAS.map(j=>`<label class="chip" style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" data-gj="${esc(j.id)}" ${(g.janelas||[]).includes(j.id)?"checked":""}>${esc(U.DIAS_C[j.dia_semana])} ${esc(j.turno.toLowerCase())}</label>`).join("")}</div></div>
+      <div class="row-act"><button class="small-btn rm" type="button" data-gdel style="margin-right:auto">Excluir regra</button><button class="btn btn-ghost" type="button" data-gsave>Salvar regra</button></div>
+    </div>`;
+  }
+
   async function renderAjustes(){
     const el = $("t-ajustes");
     const { data:conv } = await sb.from("equipe_convites").select("*").order("nome");
     const { data:eq } = await sb.from("equipe").select("*").order("nome");
+    const { data:fg } = await sb.from("frete_gratis").select("*").order("ordem");
+    const REGRAS = fg || [];
     el.innerHTML = `
       <div class="bar"><h2>Ajustes</h2></div>
       <form class="card" id="f-cfg">
@@ -535,6 +555,13 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
         <span class="note" id="fr-sim"></span>
         <div class="row-act"><button class="btn btn-primary" type="submit">Salvar loja</button></div>
       </form>
+
+      <div class="card">
+        <b>Entrega grátis</b>
+        <p class="note">Vale se o bairro do cliente bater, ou o CEP, ou se o endereço cair dentro do raio do ponto de referência. Sem horário marcado, vale em todos.</p>
+        <div style="display:flex;flex-direction:column;gap:12px">${REGRAS.map(regraHTML).join("")}</div>
+        <button class="small-btn" type="button" id="add-fg" style="align-self:flex-start">+ Adicionar regra de entrega grátis</button>
+      </div>
 
       <div class="card">
         <b>Horários de entrega</b>
@@ -590,6 +617,43 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
       $("fr-sim").textContent = fixo ? "" : `Exemplos: 2 km = ${t(2)} · 5 km = ${t(5)} · 8 km = ${t(8)}. Compare com umas cotações reais do Uber Moto e ajuste.`;
     };
     ["c-fm","c-fb","c-fk","c-fmin"].forEach(id => $(id).addEventListener("input", freteUI)); freteUI();
+
+    el.querySelectorAll("[data-fg]").forEach(box => {
+      const id = box.dataset.fg; const regra = REGRAS.find(r=>r.id===id);
+      const g = k => box.querySelector(`[data-g="${k}"]`);
+      box.querySelector("[data-gsave]").onclick = async ev => {
+        const lista = v => v.split(",").map(x=>x.trim()).filter(Boolean);
+        const endereco = g("endereco").value.trim();
+        const row = { nome:g("nome").value.trim()||"Entrega grátis", ativo:g("ativo").checked, bairros:lista(g("bairros").value),
+          ceps:lista(g("ceps").value).map(c=>c.replace(/\D/g,"")).filter(c=>c.length===8), endereco,
+          raio_km: g("raio_km").value.trim()==="" ? null : Math.max(0, parseFloat(g("raio_km").value)||0),
+          janelas:[...box.querySelectorAll("[data-gj]:checked")].map(i=>i.dataset.gj) };
+        if (!endereco) { row.lat = null; row.lng = null; }
+        else if (endereco !== regra.endereco || regra.lat == null) {
+          ev.target.disabled = true; toast("Procurando o ponto no mapa…");
+          const c = await GEO.coords({ livre: endereco });
+          row.lat = c ? c.lat : null; row.lng = c ? c.lng : null;
+          if (!c) toast("Não achamos esse ponto no mapa. Tente um endereço mais completo.");
+        }
+        ev.target.disabled = true;
+        const { error } = await sb.from("frete_gratis").update(row).eq("id", id);
+        ev.target.disabled = false;
+        if (error) { toast(U.erro(error)); return; }
+        toast("Regra salva"); renderAjustes();
+      };
+      box.querySelector("[data-gdel]").onclick = async ev => {
+        const b = ev.target;
+        if (b.dataset.sure!=="1") { b.dataset.sure="1"; b.textContent="Toque de novo para excluir"; setTimeout(()=>{ if(b.isConnected){b.dataset.sure="";b.textContent="Excluir regra";} },4000); return; }
+        const { error } = await sb.from("frete_gratis").delete().eq("id", id);
+        if (error) { toast(U.erro(error)); return; }
+        toast("Regra excluída"); renderAjustes();
+      };
+    });
+    $("add-fg").onclick = async () => {
+      const { error } = await sb.from("frete_gratis").insert({ nome:"Nova regra", ativo:false, ordem:REGRAS.length+1 });
+      if (error) { toast(U.erro(error)); return; }
+      renderAjustes();
+    };
 
     $("f-cfg").onsubmit = async e => {
       e.preventDefault();

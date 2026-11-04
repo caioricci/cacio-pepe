@@ -134,6 +134,9 @@
 .frete{border-radius:var(--r);padding:12px 14px;font-size:14px;background:var(--paper)}
 .frete b{font-variant-numeric:tabular-nums}
 .frete.bad{background:var(--mortadela);color:var(--on-mortadela)}
+.frete.gratis{background:var(--pistache);color:var(--on-pistache)}
+.frete.dica{margin-top:8px;background:transparent;border:1.5px dashed var(--line);color:var(--muted)}
+.frete.dica b{color:var(--ink)}
 .pay-g{display:flex;flex-direction:column;gap:8px}
 .pay-g .lbl{font-size:13px;font-weight:600;color:var(--muted)}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -217,7 +220,7 @@
 (function(){
   const $ = id => document.getElementById(id);
   const { brl, esc } = U;
-  let CFG = null, PRODUTOS = [], SLOTS = [], LOJA = null;
+  let CFG = null, PRODUTOS = [], SLOTS = [], LOJA = null, GRATIS = [];
   const CART_KEY = "cacio_carrinho_v1", DADOS_KEY = "cacio_dados_v1";
   const ls = { get(k,d){ try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch(e){ return d; } }, set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} } };
   let cart = ls.get(CART_KEY, []);
@@ -232,10 +235,12 @@
 
   // ---------- dados ----------
   async function carregar(){
-    const [c, p] = await Promise.all([
+    const [c, p, g] = await Promise.all([
       sb.from("config").select("*").eq("id",1).single(),
       sb.from("produtos").select("*").eq("ativo",true).order("ordem").order("nome"),
+      sb.from("frete_gratis").select("*").eq("ativo",true).order("ordem"),
     ]);
+    GRATIS = (g.data || []);
     if (c.error || p.error) { $("menu").innerHTML = `<p class="empty">Não conseguimos carregar o cardápio agora. Atualize a página em instantes.</p>`; return; }
     CFG = c.data; PRODUTOS = p.data;
     aplicarMarca();
@@ -333,8 +338,34 @@
     const v = Math.max(Number(CFG.frete_min), Number(CFG.frete_base) + Number(CFG.frete_km) * Math.round(km*10)/10);
     return Math.ceil(v*2)/2;
   }
+  // ---------- entrega grátis ----------
+  const norm = t => U.semAcento(t).toLowerCase().replace(/\s+/g," ").trim();
+  function bateLocal(g){
+    const cep = (D.cep||"").replace(/\D/g,"");
+    if (D.bairro && (g.bairros||[]).some(b => norm(b) === norm(D.bairro))) return true;
+    if (cep && (g.ceps||[]).includes(cep)) return true;
+    const cli = ck.frete.cli;
+    if (cli && g.lat != null && g.raio_km != null && GEO.linhaReta(cli, { lat:g.lat, lng:g.lng }) <= Number(g.raio_km)) return true;
+    return false;
+  }
+  const janelaAtual = () => ck.slot ? ck.slot.split("|")[1] : null;
+  const valeNaJanela = g => !(g.janelas||[]).length || (janelaAtual() && g.janelas.includes(janelaAtual()));
+  function gratis(){ if (ck.modo !== "Entrega") return null; return GRATIS.find(g => bateLocal(g) && valeNaJanela(g)) || null; }
+  // lugar tem grátis, mas não no horário escolhido (ex: PUC só à noite)
+  function gratisOutroHorario(){ if (ck.modo !== "Entrega" || gratis()) return null; return GRATIS.find(g => bateLocal(g) && !valeNaJanela(g)) || null; }
+  function nomesJanelas(ids){ return ids.map(id => { const s = SLOTS.find(x=>x.janela_id===id); return s ? `${U.DIAS[s.dia_semana]} ${s.turno.toLowerCase()}` : id; }).filter((v,i,a)=>a.indexOf(v)===i).join(" e "); }
+  // PUC e outros pontos: encontra no mapa uma vez
+  let gratisGeo = false;
+  async function localizarPontosGratis(){
+    if (gratisGeo) return; gratisGeo = true;
+    for (const g of GRATIS) if (g.lat == null && g.endereco && g.raio_km != null) {
+      const c = await GEO.coords({ livre: g.endereco }); if (c) { g.lat = c.lat; g.lng = c.lng; }
+    }
+  }
+
   function taxa(){
     if (ck.modo !== "Entrega") return 0;
+    if (gratis()) return 0;
     if (CFG.frete_modo === "fixo") return Number(CFG.taxa_entrega||0);
     return ck.frete.estado === "ok" ? ck.frete.taxa : 0;
   }
@@ -360,19 +391,26 @@
     return LOJA;
   }
   async function calcularFrete(){
-    if (CFG.frete_modo === "fixo") return;
     if (!D.rua || !D.num || !D.cidade) { ck.frete = { estado:"vazio" }; renderFrete(); return; }
     const seq = ++freteSeq;
     ck.frete = { estado:"calc" }; renderFrete();
     const [loja, cli] = await Promise.all([ lojaCoords(), GEO.coords({ rua:D.rua, numero:D.num, cidade:D.cidade, uf:D.uf, cep:D.cep }) ]);
     if (seq !== freteSeq) return;
-    if (!loja || !cli) { ck.frete = { estado:"combinar" }; renderFrete(); return; }
+    await localizarPontosGratis();
+    if (!loja || !cli) { ck.frete = { estado:"combinar", cli }; renderFrete(); return; }
     const km = await GEO.km(loja, cli);
     if (seq !== freteSeq) return;
-    if (Number(CFG.frete_raio_km) > 0 && km > Number(CFG.frete_raio_km)) { ck.frete = { estado:"fora", km }; renderFrete(); return; }
-    ck.frete = { estado:"ok", km, taxa: calcTaxa(km) }; renderFrete();
+    if (Number(CFG.frete_raio_km) > 0 && km > Number(CFG.frete_raio_km)) { ck.frete = { estado:"fora", km, cli }; renderFrete(); return; }
+    ck.frete = { estado:"ok", km, cli, taxa: calcTaxa(km) }; renderFrete();
   }
   function freteHTML(){
+    const g = gratis();
+    if (g) return `<div class="frete gratis">Entrega grátis · <b>${esc(g.nome)}</b></div>`;
+    const o = gratisOutroHorario();
+    const dica = o ? `<div class="frete dica">Nesse endereço a entrega é grátis em: <b>${esc(nomesJanelas(o.janelas))}</b>.</div>` : "";
+    return freteBase() + dica;
+  }
+  function freteBase(){
     if (CFG.frete_modo === "fixo") return Number(CFG.taxa_entrega)>0 ? `<div class="frete">Taxa de entrega: <b>${brl(CFG.taxa_entrega)}</b></div>` : "";
     const f = ck.frete;
     if (f.estado==="calc") return `<div class="frete">Calculando a entrega…</div>`;
@@ -389,7 +427,8 @@
   function totaisHTML(){
     const f = ck.frete; let linhaEnt = "";
     if (ck.modo==="Entrega") {
-      linhaEnt = CFG.frete_modo==="fixo" ? `<div><span>Entrega</span><span>${taxa()>0?brl(taxa()):"Grátis"}</span></div>`
+      linhaEnt = gratis() ? `<div><span>Entrega</span><span>Grátis</span></div>`
+        : CFG.frete_modo==="fixo" ? `<div><span>Entrega</span><span>${taxa()>0?brl(taxa()):"Grátis"}</span></div>`
         : f.estado==="ok" ? `<div><span>Entrega <small>(estimada)</small></span><span>${brl(f.taxa)}</span></div>`
         : `<div><span>Entrega</span><span><small>${f.estado==="combinar"?"a combinar":"—"}</small></span></div>`;
     }
@@ -428,7 +467,7 @@
       <div class="ck-sec gutter">
         <h3>Como você quer receber?</h3>
         <div class="seg">
-          <button type="button" class="opt" id="m-ent" aria-pressed="${ck.modo==="Entrega"}"><b>Entrega</b><small>${CFG.frete_modo==="fixo"?(Number(CFG.taxa_entrega)>0?`Taxa ${brl(CFG.taxa_entrega)}`:"No seu endereço"):"Taxa pela distância"}</small></button>
+          <button type="button" class="opt" id="m-ent" aria-pressed="${ck.modo==="Entrega"}"><b>Entrega</b><small>${CFG.frete_modo==="fixo"?(Number(CFG.taxa_entrega)>0?`Taxa ${brl(CFG.taxa_entrega)}`:"No seu endereço"):(GRATIS.find(g=>!g.janelas.length&&g.bairros.length)?`Grátis: ${esc(GRATIS.find(g=>!g.janelas.length&&g.bairros.length).bairros.join(" e "))}`:"Taxa pela distância")}</small></button>
           <button type="button" class="opt" id="m-ret" aria-pressed="${ck.modo==="Retirada"}"><b>Retirada</b><small>${esc(CFG.endereco_retirada.split(/[–,]/)[0])}</small></button>
         </div>
       </div>
@@ -489,7 +528,7 @@
     body.querySelectorAll("[data-pag]").forEach(b=>b.onclick=()=>{ ck.pag=b.dataset.pag; ck.err=""; renderCheckout(); });
     body.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>fechar("ck-scrim"));
     // campos: guardam no estado sem redesenhar a tela (não perde o foco)
-    body.querySelectorAll("[data-d]").forEach(i => i.oninput = () => { D[i.dataset.d] = i.value; saveDados(); });
+    body.querySelectorAll("[data-d]").forEach(i => i.oninput = () => { D[i.dataset.d] = i.value; saveDados(); if (i.dataset.d==="bairro") renderFrete(); });
     const cep = $("d-cep");
     if (cep) {
       cep.addEventListener("input", async () => {
@@ -500,7 +539,7 @@
         const r = await GEO.cep(c);
         if (!r) { toast("CEP não encontrado. Preencha a rua e a cidade."); return; }
         D.rua = r.logradouro || D.rua; D.bairro = r.bairro || D.bairro; D.cidade = r.localidade || D.cidade; D.uf = r.uf || D.uf; saveDados();
-        $("d-rua").value = D.rua; $("d-bairro").value = D.bairro; $("d-cidade").value = D.cidade;
+        $("d-rua").value = D.rua; $("d-bairro").value = D.bairro; $("d-cidade").value = D.cidade; renderFrete();
         if (D.num) calcularFrete(); else $("d-num").focus();
       });
       ["d-num","d-rua","d-cidade"].forEach(id => $(id).addEventListener("change", calcularFrete));
@@ -521,7 +560,7 @@
     if (ck.modo==="Entrega") {
       if (!D.rua.trim() || !D.num.trim() || !D.cidade.trim()) return "Preencha o endereço de entrega (CEP, rua, número e cidade).";
       if (ck.frete.estado==="calc") return "Aguarde o cálculo da entrega.";
-      if (ck.frete.estado==="fora") return "Esse endereço está fora da área de entrega.";
+      if (ck.frete.estado==="fora" && !gratis()) return "Esse endereço está fora da área de entrega.";
     }
     if (!ck.pag) return "Escolha a forma de pagamento.";
     if (!CFG.whatsapp) return "O WhatsApp da loja ainda não foi configurado.";
@@ -542,7 +581,7 @@
     L.push("");
     if (ck.modo==="Entrega") {
       L.push(`Subtotal: ${brl(r.subtotal)}`);
-      L.push(r.frete_combinar ? "Entrega: a combinar" : `Entrega${r.km!=null?` (${String(r.km).replace(".",",")} km)`:""}: ${brl(r.taxa_entrega)}`);
+      L.push(r.frete_gratis ? `Entrega: grátis (${r.frete_gratis})` : r.frete_combinar ? "Entrega: a combinar" : `Entrega${r.km!=null?` (${String(r.km).replace(".",",")} km)`:""}: ${brl(r.taxa_entrega)}`);
     }
     L.push(`*Total: ${brl(r.total)}*${r.frete_combinar?" + entrega":""}`, "");
     L.push(`*Nome:* ${D.nome.trim()}`);
@@ -565,7 +604,9 @@
       p_itens: cart.map(l=>({ produto_id:l.produto_id, opcao:l.opcao, obs:l.obs, qtd:l.qtd })),
       p_modo: ck.modo, p_nome: D.nome.trim(), p_telefone: D.tel.trim(), p_endereco: ck.modo==="Entrega" ? enderecoTexto() : "",
       p_pagamento: ck.pag, p_troco: ck.pag==="Dinheiro" ? D.troco.trim() : "", p_obs: D.obs.trim(),
-      p_km: ck.modo==="Entrega" && ck.frete.estado==="ok" ? Math.round(ck.frete.km*10)/10 : null,
+      p_km: ck.modo==="Entrega" && (ck.frete.estado==="ok" || ck.frete.estado==="fora") ? Math.round(ck.frete.km*10)/10 : null,
+      p_bairro: ck.modo==="Entrega" ? D.bairro.trim() : "", p_cep: ck.modo==="Entrega" ? (D.cep||"") : "",
+      p_lat: ck.modo==="Entrega" ? (ck.frete.cli?.lat ?? null) : null, p_lng: ck.modo==="Entrega" ? (ck.frete.cli?.lng ?? null) : null,
     });
     enviando = false; $("ck-send").removeAttribute("aria-disabled");
     if (error) { ck.err = U.erro(error); await atualizarAgenda(); renderCheckout(); $("ck-err").scrollIntoView({behavior:"smooth",block:"center"}); return; }

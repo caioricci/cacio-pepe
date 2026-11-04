@@ -110,6 +110,8 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
 .combo{background:var(--pistache);color:var(--on-pistache);border-radius:var(--r-sm);padding:6px 10px;font-size:14px}
 .nota{border-left:3px solid var(--line);padding:2px 10px;font-size:13px;color:var(--muted);font-style:italic}
 .btn-wa,.ped a.btn-wa{background:#1F8F4E;color:#fff;text-decoration:none}
+.avisos{background:color-mix(in srgb,var(--mortadela) 22%,var(--surface));border-radius:12px;padding:10px 14px;margin:0 0 12px;font-size:14px}
+.avisos ul{margin:6px 0 0;padding-left:18px}
 .it-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:6px 14px}
 .it-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;min-width:0}
 .it-row small{color:var(--muted)}
@@ -355,6 +357,7 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
 <script src="config.js"></script>
 <script src="jsQR.js"></script>
 <script src="estoque.js"></script>
+<script src="leitor-pedido.js"></script>
 <script>
 (function(){
   const $ = id => document.getElementById(id);
@@ -521,7 +524,7 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
   // ---------- PEDIDOS ----------
   const STATUS = { aguardando:"Aguardando", confirmado:"Confirmado", entregue:"Entregue", cancelado:"Cancelado" };
   const CANAIS = { site:"Site", whatsapp:"WhatsApp", instagram:"Instagram", presencial:"Presencial", outro:"Outro" };
-  let pedEdit = null, novoAberto = false, PEDS_LISTA = [];
+  let pedEdit = null, novoAberto = false, PEDS_LISTA = [], colarAberto = false, colarTexto = "", PRE = null;
   const jTurno = id => JANELAS.find(j=>j.id===id)?.turno || id;
   const janelasDoDia = d => d ? JANELAS.filter(j => j.ativo && j.dia_semana === U.parseData(d).dow) : [];
   const pagsTodas = () => [...new Set([...(CFG.pix_chave?["Pix"]:[]), "Pix", ...CFG.pagamentos])];
@@ -553,18 +556,52 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
     Object.values(grupos).forEach(ps => ps.sort((a,b)=> ordem[a.status]-ordem[b.status] || (a.status==="aguardando" ? new Date(a.criado_em)-new Date(b.criado_em) : a.numero-b.numero)));
     const parados = data.filter(p=>p.status==="aguardando").length;
     el.innerHTML = `
-      <div class="bar"><h2>Pedidos</h2><button class="btn btn-primary" type="button" id="btn-novo">${novoAberto?"Fechar":"Novo pedido avulso"}</button></div>
+      <div class="bar"><h2>Pedidos</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-ghost" type="button" id="btn-colar">${colarAberto?"Fechar":"Colar pedido"}</button><button class="btn btn-primary" type="button" id="btn-novo">${novoAberto?"Fechar":"Novo pedido avulso"}</button></div></div>
       <div class="filters">${filtros.map(([v,l])=>`<button class="chip" type="button" data-f="${v}" aria-pressed="${pedFiltro===v}">${l}${v==="aguardando"&&parados?` (${parados})`:""}</button>`).join("")}</div>
-      ${novoAberto?`<form class="card" id="f-novo">${formPedidoHTML(null)}</form>`:""}
+      ${colarAberto?`<div class="card" id="colar">
+        <div class="jh"><b>Colar pedido</b></div>
+        <p class="note" style="margin:0 0 8px">Cole a mensagem que o cliente mandou: pedido do Goomer, do site ou texto livre do WhatsApp. O sistema preenche o pedido e você confere antes de lançar.</p>
+        <textarea class="input" id="colar-txt" rows="8" placeholder="Cole aqui a mensagem do pedido">${esc(colarTexto)}</textarea>
+        <div data-dup></div>
+        <div class="row-act"><button class="btn btn-ghost" type="button" id="colar-limpar">Limpar</button><button class="btn btn-primary" type="button" id="colar-ler">Ler pedido</button></div>
+      </div>`:""}
+      ${novoAberto?`<form class="card" id="f-novo">${PRE?.avisos?.length?`<div class="avisos"><b>Confira antes de lançar:</b><ul>${PRE.avisos.map(a=>`<li>${esc(a)}</li>`).join("")}</ul></div>`:""}${formPedidoHTML(null)}</form>`:""}
       ${lista.length?Object.entries(grupos).map(([k,ps])=>{ const [d,j]=k.split("|"); const tot=ps.filter(p=>p.status!=="cancelado").reduce((a,p)=>a+Number(p.total),0);
         return `<div class="day-h">${U.diaLongo(d)} · ${esc(jTurno(j))} <span class="note">— ${ps.length} pedido${ps.length>1?"s":""}, ${brl(tot)}</span></div><div class="grid">${ps.map(p=> pedEdit===p.id ? `<form class="card" data-edit="${p.id}">${formPedidoHTML(p)}</form>` : cardPedido(p)).join("")}</div>`;}).join("")
         :`<p class="empty">Nenhum pedido nesse filtro.</p>`}`;
-    $("btn-novo").onclick = () => { novoAberto = !novoAberto; pedEdit = null; renderPedidos(); };
+    $("btn-novo").onclick = () => { novoAberto = !novoAberto; pedEdit = null; PRE = null; renderPedidos(); };
+    $("btn-colar").onclick = () => { colarAberto = !colarAberto; renderPedidos(); if (colarAberto) setTimeout(()=>$("colar-txt")?.focus(), 50); };
+    if (colarAberto) {
+      $("colar-txt").oninput = e => colarTexto = e.target.value;
+      $("colar-limpar").onclick = () => { colarTexto = ""; $("colar-txt").value = ""; $("colar-txt").focus(); };
+      $("colar-ler").onclick = () => lerColado(false);
+    }
     el.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { pedFiltro = b.dataset.f; renderPedidos(); });
     el.querySelectorAll("[data-act]").forEach(b => b.onclick = () => acaoPedido(b));
     el.querySelectorAll("[data-editar]").forEach(b => b.onclick = () => { pedEdit = b.dataset.editar; novoAberto = false; renderPedidos(); });
-    if (novoAberto) ligarForm($("f-novo"), null);
+    if (novoAberto) { ligarForm($("f-novo"), null, PRE); if (PRE) $("f-novo").scrollIntoView({ behavior:"smooth", block:"start" }); }
     el.querySelectorAll("form[data-edit]").forEach(f => ligarForm(f, PEDS_LISTA.find(p=>p.id===f.dataset.edit)));
+  }
+
+  // lê a mensagem colada e abre o pedido avulso já preenchido
+  async function lerColado(mesmoAssim){
+    const txt = ($("colar-txt")?.value || colarTexto).trim(); colarTexto = txt;
+    if (txt.length < 5) { toast("Cole a mensagem do pedido primeiro."); return; }
+    const r = LerPedido.ler(txt, { produtos:PRODS, janelas:JANELAS, pagamentos:pagsTodas(), hoje:hoje() });
+    if (r.numeroSite && !mesmoAssim) {
+      const { data: ja } = await sb.from("pedidos").select("id,numero,nome,status,data").eq("numero", r.numeroSite).maybeSingle();
+      if (ja) {
+        $("colar").querySelector("[data-dup]").innerHTML = `<div class="avisos"><b>Esse pedido já está no sistema</b> (#${ja.numero}, ${esc(ja.nome)}, ${STATUS[ja.status].toLowerCase()}, ${U.diaLongo(ja.data)}). Ele foi feito pelo site, então não precisa lançar de novo.
+          <div class="row-act"><button class="btn btn-ghost" type="button" data-ver>Ver o pedido</button><button class="btn btn-ghost" type="button" data-mesmo>Lançar mesmo assim</button></div></div>`;
+        $("colar").querySelector("[data-ver]").onclick = () => { colarAberto = false; pedFiltro = "todos"; renderPedidos().then(()=>{ const c=[...document.querySelectorAll(".ped .num")].find(x=>x.textContent==="#"+ja.numero); c?.closest(".ped")?.scrollIntoView({behavior:"smooth",block:"center"}); }); };
+        $("colar").querySelector("[data-mesmo]").onclick = () => lerColado(true);
+        return;
+      }
+    }
+    if (!r.itens.length && !r.nome) { toast("Não consegui ler um pedido nessa mensagem."); return; }
+    if (r.taxa == null && r.modo === "Entrega") r.avisos.push("Taxa de entrega não veio na mensagem: confira o valor.");
+    PRE = r; colarAberto = false; colarTexto = ""; novoAberto = true; pedEdit = null;
+    renderPedidos();
   }
 
   function cardPedido(p){
@@ -633,9 +670,28 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
       <div class="row-act"><span class="note" data-total style="margin-right:auto"></span>${n?"":`<button class="btn btn-ghost" type="button" data-cancel>Fechar</button>`}<button class="btn btn-primary" type="submit">${n?"Lançar pedido":"Salvar alterações"}</button></div>`;
   }
 
-  function ligarForm(f, p){
+  function ligarForm(f, p, pre){
     const g = name => f.elements[name];
     const n = !p;
+    if (n && pre) {
+      g("canal").value = "whatsapp";
+      if (pre.nome) g("nome").value = pre.nome;
+      if (pre.telefone) g("telefone").value = pre.telefone;
+      if (pre.data) g("data").value = pre.data;
+      if (pre.modo) g("modo").value = pre.modo;
+      if (pre.taxa != null) g("taxa_entrega").value = pre.taxa;
+      if (pre.pagamento) g("pagamento").value = pre.pagamento;
+      if (pre.endereco) g("endereco").value = pre.endereco;
+      const obsItens = pre.itens.filter(i=>i.obs).map(i=>`${PRODS.find(x=>x.id===i.pid)?.nome}: ${i.obs}`);
+      g("obs").value = [pre.obs, ...obsItens].filter(Boolean).join(" · ").slice(0,500);
+      g("nota_interna").value = pre.nota || "Importado de mensagem colada";
+      g("status").value = "aguardando";
+      for (const it of pre.itens) {
+        const inp = [...f.querySelectorAll(".it-q")].find(i => i.dataset.pid===it.pid && i.dataset.op===it.op)
+                 || [...f.querySelectorAll(".it-q")].find(i => i.dataset.pid===it.pid);
+        if (inp) inp.value = (parseInt(inp.value,10)||0) + it.q;
+      }
+    }
     const itensDoForm = () => [...f.querySelectorAll(".it-q")].map(i => ({ pr: PRODS.find(x=>x.id===i.dataset.pid), op: i.dataset.op, q: Math.max(0, parseInt(i.value,10)||0) })).filter(x=>x.q>0 && x.pr);
     const subtotal = () => n ? itensDoForm().reduce((a,x)=>a+x.q*OPC.linha(x.pr, x.op).preco,0) : Number(p.subtotal);
     const paesDoForm = () => n ? itensDoForm().reduce((a,x)=>a+x.q*(x.pr.paes_por_unidade??1)*OPC.linha(x.pr, x.op).unid,0) : p.paes;
@@ -666,6 +722,7 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
       } else box.textContent = "";
     };
     preencherTurnos();
+    if (n && pre?.janela_id) g("janela_id").value = pre.janela_id;
     g("data").addEventListener("change", () => { preencherTurnos(); verCapacidade(); });
     g("janela_id").addEventListener("change", verCapacidade);
     f.addEventListener("input", atualizar);
@@ -690,14 +747,14 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
         const itens = its.map(x=>({ produto_id:x.pr.id, nome:x.pr.nome, opcao:x.op, qtd:x.q, preco:OPC.linha(x.pr, x.op).preco, unidades:OPC.linha(x.pr, x.op).unid, obs:"" }));
         const sub = subtotal();
         ({ error } = await sb.from("pedidos").insert({ ...comum, canal:g("canal").value, itens, paes:paesDoForm(), subtotal:sub, total:sub+taxa,
-          status:g("status").value, pago:g("pago").checked, tipo:"regular" }));
+          status:g("status").value, pago:g("pago").checked, tipo:"regular", ...(pre?.troco ? { troco:pre.troco } : {}) }));
       } else {
         ({ error } = await sb.from("pedidos").update({ ...comum, total:Number(p.subtotal)+taxa, frete_gratis: taxa>0 ? "" : p.frete_gratis, frete_combinar: ent && taxa===0 && p.frete_combinar }).eq("id", p.id));
       }
       btn.disabled = false;
       if (error) { toast(U.erro(error)); return; }
       toast(n ? "Pedido lançado" : "Pedido atualizado");
-      novoAberto = false; pedEdit = null; renderPedidos();
+      novoAberto = false; pedEdit = null; PRE = null; renderPedidos();
     };
   }
 

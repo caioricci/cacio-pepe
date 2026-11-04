@@ -599,8 +599,8 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
     const n = !p; const id = n ? "novo" : p.id.slice(0,8);
     const d = p?.data || "";
     const linhasItens = PRODS.filter(x=>x.ativo || n===false).flatMap(pr => {
-      const g = (pr.opcoes||[])[0]; const ops = g && g.escolhas?.length ? g.escolhas.map(e=>`${g.nome}: ${e}`) : [""];
-      return ops.map(op => `<div class="it-row"><span>${esc(pr.nome)}${op?` <small>${esc(op.split(": ")[1])}</small>`:""}</span>
+      const g = (pr.opcoes||[])[0]; const ops = g && g.escolhas?.length ? g.escolhas.map(e=>`${g.nome}: ${OPC.nome(e)}`) : [""];
+      return ops.map(op => `<div class="it-row"><span>${esc(pr.nome)}${op?` <small>${esc(op.split(": ")[1])}</small>`:""} <small>${brl(OPC.linha(pr, op).preco)}</small></span>
         <input class="input it-q" type="number" min="0" max="50" inputmode="numeric" value="0" data-pid="${pr.id}" data-op="${esc(op)}" aria-label="Quantidade ${esc(pr.nome)} ${esc(op)}"></div>`);
     }).join("");
     return `
@@ -637,8 +637,8 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
     const g = name => f.elements[name];
     const n = !p;
     const itensDoForm = () => [...f.querySelectorAll(".it-q")].map(i => ({ pr: PRODS.find(x=>x.id===i.dataset.pid), op: i.dataset.op, q: Math.max(0, parseInt(i.value,10)||0) })).filter(x=>x.q>0 && x.pr);
-    const subtotal = () => n ? itensDoForm().reduce((a,x)=>a+x.q*Number(x.pr.preco),0) : Number(p.subtotal);
-    const paesDoForm = () => n ? itensDoForm().reduce((a,x)=>a+x.q*(x.pr.paes_por_unidade??1),0) : p.paes;
+    const subtotal = () => n ? itensDoForm().reduce((a,x)=>a+x.q*OPC.linha(x.pr, x.op).preco,0) : Number(p.subtotal);
+    const paesDoForm = () => n ? itensDoForm().reduce((a,x)=>a+x.q*(x.pr.paes_por_unidade??1)*OPC.linha(x.pr, x.op).unid,0) : p.paes;
     let capInfo = null;
     const preencherTurnos = () => {
       const js = janelasDoDia(g("data").value);
@@ -687,7 +687,7 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
       if (n) {
         const its = itensDoForm();
         if (!its.length) { toast("Coloque pelo menos um item."); btn.disabled=false; return; }
-        const itens = its.map(x=>({ produto_id:x.pr.id, nome:x.pr.nome, opcao:x.op, qtd:x.q, preco:Number(x.pr.preco), obs:"" }));
+        const itens = its.map(x=>({ produto_id:x.pr.id, nome:x.pr.nome, opcao:x.op, qtd:x.q, preco:OPC.linha(x.pr, x.op).preco, unidades:OPC.linha(x.pr, x.op).unid, obs:"" }));
         const sub = subtotal();
         ({ error } = await sb.from("pedidos").insert({ ...comum, canal:g("canal").value, itens, paes:paesDoForm(), subtotal:sub, total:sub+taxa,
           status:g("status").value, pago:g("pago").checked, tipo:"regular" }));
@@ -764,6 +764,16 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
       </div>
     </details>`;
   }
+  // "1 unidade = 15, 3 unidades = 43" -> [{nome,preco,unidades}]; sem "=" vira texto simples
+  function lerEscolhas(txt){
+    return txt.split(/,(?!\d)/).map(x=>x.trim()).filter(Boolean).map(x=>{
+      const m = x.match(/^(.*?)\s*=\s*(?:R\$\s*)?([\d.,]+)$/);
+      if (!m) return x;
+      const nome = m[1].trim(); const preco = Number(m[2].replace(/\.(?=\d{3}\b)/g,"").replace(",","."));
+      const un = parseInt((nome.match(/^(\d+)\s*(un|unidade|unidades|pe[cç]a|pe[cç]as)\b/i)||[])[1]||"1",10);
+      return { nome, preco, unidades: un };
+    });
+  }
   function ligarProduto(p){
     const box = document.querySelector(`details[data-id="${p.id}"]`); if (!box) return;
     const st = { fotos:[...p.fotos], opcoes: JSON.parse(JSON.stringify(p.opcoes||[])) };
@@ -793,11 +803,12 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
       og.innerHTML = st.opcoes.map((g,gi)=>`<div class="og">
         <div class="og-h"><input class="input" data-gn="${gi}" value="${esc(g.nome)}" placeholder="Nome do grupo (ex: Pesto)" aria-label="Nome do grupo">
           <label class="toggle" style="font-size:13px"><span>Obrigatório</span><input type="checkbox" data-go="${gi}" ${g.obrigatorio?"checked":""}></label></div>
-        <input class="input" data-ge="${gi}" value="${esc((g.escolhas||[]).join(", "))}" placeholder="Escolhas separadas por vírgula" aria-label="Escolhas">
+        <input class="input" data-ge="${gi}" value="${esc((g.escolhas||[]).map(e=>OPC.preco(e)!=null?`${OPC.nome(e)} = ${String(OPC.preco(e)).replace(".",",")}`:OPC.nome(e)).join(", "))}" placeholder="Escolhas separadas por vírgula" aria-label="Escolhas">
+        <span class="note">Para escolha com preço próprio, use "nome = preço". Ex: 1 unidade = 15, 3 unidades = 43, 6 unidades = 84.</span>
         <button class="small-btn rm" type="button" data-gx="${gi}" style="align-self:flex-start">Remover grupo</button></div>`).join("");
       og.querySelectorAll("[data-gn]").forEach(i=>i.oninput=()=>st.opcoes[+i.dataset.gn].nome=i.value);
       og.querySelectorAll("[data-go]").forEach(i=>i.onchange=()=>st.opcoes[+i.dataset.go].obrigatorio=i.checked);
-      og.querySelectorAll("[data-ge]").forEach(i=>i.oninput=()=>st.opcoes[+i.dataset.ge].escolhas=i.value.split(",").map(s=>s.trim()).filter(Boolean));
+      og.querySelectorAll("[data-ge]").forEach(i=>i.oninput=()=>st.opcoes[+i.dataset.ge].escolhas=lerEscolhas(i.value));
       og.querySelectorAll("[data-gx]").forEach(b=>b.onclick=()=>{ st.opcoes.splice(+b.dataset.gx,1); drawOps(); });
     };
     box.querySelector("[data-addg]").onclick = () => { st.opcoes.push({ nome:"", obrigatorio:true, escolhas:[] }); drawOps(); };

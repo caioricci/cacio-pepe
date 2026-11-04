@@ -38,6 +38,28 @@ window.U = {
   semAcento: s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, ""),
 };
 
+// ---------- Opções de produto ----------
+// Uma escolha pode ser texto ("Manjericão") ou objeto com preço e unidades ({ nome:"3 unidades", preco:43, unidades:3 }).
+window.OPC = {
+  nome: e => (e && typeof e === "object") ? e.nome : String(e ?? ""),
+  preco: e => (e && typeof e === "object" && e.preco != null && e.preco !== "") ? Number(e.preco) : null,
+  unid: e => (e && typeof e === "object" && Number(e.unidades) > 0) ? Number(e.unidades) : 1,
+  // preço unitário e unidades de uma linha, a partir do texto "Grupo: escolha; Grupo: escolha"
+  linha(p, opcao) {
+    let preco = Number(p?.preco || 0), unid = 1;
+    const partes = String(opcao || "").split(";").map(x => x.trim());
+    for (const g of (p?.opcoes || [])) for (const e of (g.escolhas || [])) {
+      if (partes.includes(`${g.nome}: ${OPC.nome(e)}`)) { if (OPC.preco(e) != null) preco = OPC.preco(e); unid *= OPC.unid(e); }
+    }
+    return { preco, unid };
+  },
+  // menor preço entre as escolhas com preço (para "a partir de")
+  aPartir(p) {
+    const ps = (p?.opcoes || []).flatMap(g => (g.escolhas || []).map(OPC.preco)).filter(x => x != null);
+    return ps.length ? Math.min(...ps) : null;
+  },
+};
+
 // ---------- Pix (BR Code "copia e cola", padrão do Banco Central) ----------
 window.PIX = {
   tlv(id, v) { return id + String(v.length).padStart(2, "0") + v; },

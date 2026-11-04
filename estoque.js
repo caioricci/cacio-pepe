@@ -421,9 +421,9 @@ window.Modulos = function (ctx) {
     const cmap = Object.fromEntries((custos.data || []).map(c => [c.insumo_id, Number(c.custo || 0)]));
     let cmv = 0, paninis = 0;
     (peds.data || []).forEach(p => p.itens.forEach(it => {
-      paninis += Number(it.qtd);
+      const un = Number(it.unidades) || 1; paninis += Number(it.qtd);
       (fichas.data || []).filter(f => f.produto_id === it.produto_id && (!f.opcao || (it.opcao || "").toLowerCase().includes(f.opcao.toLowerCase())))
-        .forEach(f => cmv += Number(it.qtd) * Number(f.qtd) * (cmap[f.insumo_id] || 0));
+        .forEach(f => cmv += Number(it.qtd) * un * Number(f.qtd) * (cmap[f.insumo_id] || 0));
     }));
     const nomeMes = `${U.MESES[m - 1]} de ${y}`;
     el.innerHTML = `
@@ -478,14 +478,16 @@ window.Modulos = function (ctx) {
     const [{ data: f }, { data: cs }] = await Promise.all([sb.from("fichas").select("*").eq("produto_id", p.id), sb.from("v_estoque").select("insumo_id,custo")]);
     const custo = Object.fromEntries((cs || []).map(c => [c.insumo_id, Number(c.custo || 0)]));
     let linhas = (f || []).map(x => ({ insumo_id: x.insumo_id, opcao: x.opcao, qtd: Number(x.qtd), obs: x.obs }));
-    const escolhas = ((p.opcoes || [])[0]?.escolhas) || [];
+    const escObj = ((p.opcoes || [])[0]?.escolhas) || [];
+    const escolhas = escObj.map(OPC.nome);
     const draw = () => {
       const ins = id => INSUMOS.find(i => i.id === id);
       const custoDe = op => linhas.filter(l => !l.opcao || l.opcao === op).reduce((a, l) => a + l.qtd * (custo[l.insumo_id] || 0), 0);
       const variantes = escolhas.length ? escolhas : [""];
       const zeradas = linhas.filter(l => !(l.qtd > 0)).length;
       box.innerHTML = `<span class="l">Ficha técnica (por unidade)</span>
-        <div class="ficha-custos">${variantes.map(op => { const c = custoDe(op); const mg = p.preco > 0 ? (p.preco - c) / p.preco : 0;
+        <div class="ficha-custos">${variantes.map((op, k) => { const e = escObj[k]; const un = e ? OPC.unid(e) : 1; const pv = e && OPC.preco(e) != null ? OPC.preco(e) : Number(p.preco);
+          const c = custoDe(op) * un; const mg = pv > 0 ? (pv - c) / pv : 0;
           return `<div><span>${op ? esc(op) : "Custo"}</span><b>${brl(c)}</b><small class="${mg >= 0.5 ? "pos" : "neg"}">margem ${N(mg * 100, 0)}%</small></div>`; }).join("")}</div>
         ${zeradas ? `<p class="note">${zeradas} ingrediente${zeradas > 1 ? "s" : ""} com quantidade zero: pese e preencha para o custo ficar certo.</p>` : ""}
         <div class="ficha">${linhas.map((l, k) => `<div class="fr" data-k="${k}">

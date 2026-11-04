@@ -138,6 +138,8 @@
 .frete{border-radius:var(--r);padding:12px 14px;font-size:14px;background:var(--paper)}
 .frete b{font-variant-numeric:tabular-nums}
 .frete.bad{background:var(--mortadela);color:var(--on-mortadela)}
+.apartir{font-weight:500;font-size:.85em;color:var(--muted)}
+.cpreco{display:block;font-size:13px;color:var(--muted);font-weight:600}
 .tag-dia{display:inline-block;margin-top:8px;font-size:12px;font-weight:700;border-radius:999px;padding:3px 10px;background:var(--mortadela);color:var(--on-mortadela)}
 .frete.gratis{background:var(--pistache);color:var(--on-pistache)}
 .frete.dica{margin-top:8px;background:transparent;border:1.5px dashed var(--line);color:var(--muted)}
@@ -287,7 +289,7 @@
     $("cats").hidden = cats.length < 2;
     $("menu").innerHTML = cats.map((c,i)=>`<section class="sec" id="cat-${i}"><h2>${esc(c)}</h2>${
       PRODUTOS.filter(p=>p.categoria===c).map(p=>`<button type="button" class="prod" data-id="${p.id}">
-        <div><h3>${esc(p.nome)}</h3><p>${esc(p.descricao)}</p><div class="price">${brl(p.preco)}</div>${p.dias_semana?.length?`<span class="tag-dia">Entrega só ${diasFrase(p.dias_semana)}</span>`:""}</div>
+        <div><h3>${esc(p.nome)}</h3><p>${esc(p.descricao)}</p><div class="price">${OPC.aPartir(p)!=null?`<span class="apartir">a partir de</span> ${brl(OPC.aPartir(p))}`:brl(p.preco)}</div>${p.dias_semana?.length?`<span class="tag-dia">Entrega só ${diasFrase(p.dias_semana)}</span>`:""}</div>
         <div class="thumb">${p.fotos.length?`<img src="${esc(p.fotos[0])}" alt="" loading="lazy">${p.fotos.length>1?`<span class="n">${p.fotos.length} fotos</span>`:""}`:`<div class="noimg">${esc(p.nome[0])}</div>`}</div>
       </button>`).join("")}</section>`).join("");
     document.querySelectorAll(".prod").forEach(b => b.onclick = () => abrirProduto(b.dataset.id));
@@ -302,12 +304,12 @@
     const fotos = p.fotos || [];
     $("pd-body").innerHTML = `
       ${fotos.length?`<div class="gallery"><div class="slides" id="slides">${fotos.map(f=>`<img src="${esc(f)}" alt="${esc(p.nome)}">`).join("")}</div>${fotos.length>1?`<div class="dots" id="dots">${fotos.map((_,i)=>`<span class="${i?"":"on"}"></span>`).join("")}</div>`:""}</div>`:""}
-      <div class="pd gutter"><h3 id="pd-title">${esc(p.nome)}</h3><p>${esc(p.descricao)}</p><div class="price">${brl(p.preco)}</div>${p.dias_semana?.length?`<span class="tag-dia">Entrega só ${diasFrase(p.dias_semana)}</span>`:""}</div>
+      <div class="pd gutter"><h3 id="pd-title">${esc(p.nome)}</h3><p>${esc(p.descricao)}</p><div class="price" id="pd-preco">${OPC.aPartir(p)!=null?`<span class="apartir">a partir de</span> ${brl(OPC.aPartir(p))}`:brl(p.preco)}</div>${p.dias_semana?.length?`<span class="tag-dia">Entrega só ${diasFrase(p.dias_semana)}</span>`:""}</div>
       ${(p.opcoes||[]).map((g,gi)=>`<div class="group gutter" role="radiogroup" aria-labelledby="g-${gi}">
         <div class="group-h"><div><b id="g-${gi}">${esc(g.nome)}</b><small>Escolha 1 opção</small></div>${g.obrigatorio?`<span class="req" id="req-${gi}">Obrigatório</span>`:""}</div>
-        ${(g.escolhas||[]).map((e,ei)=>`<label class="choice"><span>${esc(e)}</span><input type="radio" name="g${gi}" id="g${gi}-${ei}" value="${esc(e)}" data-g="${gi}"></label>`).join("")}
+        ${(g.escolhas||[]).map((e,ei)=>`<label class="choice"><span>${esc(OPC.nome(e))}${OPC.preco(e)!=null?`<small class="cpreco">${brl(OPC.preco(e))}${OPC.unid(e)>1?` · ${brl(OPC.preco(e)/OPC.unid(e))} cada`:""}</small>`:""}</span><input type="radio" name="g${gi}" id="g${gi}-${ei}" value="${esc(OPC.nome(e))}" data-g="${gi}"></label>`).join("")}
       </div>`).join("")}
-      <div class="group gutter"><div class="field"><label for="pd-obs">Observações</label><textarea class="input" id="pd-obs" maxlength="200" placeholder="Ex: sem rúcula"></textarea></div></div>`;
+      <div class="group gutter"><div class="field"><label for="pd-obs">Observações</label><textarea class="input" id="pd-obs" maxlength="200" placeholder="${p.categoria==="Paninis"?"Ex: sem rúcula":"Alguma observação?"}"></textarea></div></div>`;
     document.querySelectorAll("#pd-body input[type=radio]").forEach(r => r.onchange = () => { pd.esc[r.dataset.g] = r.value; const q=$("req-"+r.dataset.g); if(q){q.textContent="Escolhido";q.classList.add("picked");} pdUpdate(); });
     $("pd-obs").oninput = e => pd.obs = e.target.value;
     const sl = $("slides");
@@ -317,7 +319,10 @@
   function pdFaltando(){ return (pd.p.opcoes||[]).findIndex((g,gi)=>g.obrigatorio && !pd.esc[gi]); }
   function pdUpdate(){
     $("pd-qty").textContent = pd.qty;
-    $("pd-price").textContent = brl(pd.p.preco*pd.qty);
+    const opc = (pd.p.opcoes||[]).map((g,gi)=>pd.esc[gi]?`${g.nome}: ${pd.esc[gi]}`:"").filter(Boolean).join("; ");
+    const un = OPC.linha(pd.p, opc).preco;
+    $("pd-price").textContent = brl(un*pd.qty);
+    if (OPC.aPartir(pd.p)!=null && pdFaltando()<0) $("pd-preco").textContent = brl(un);
     $("pd-add").setAttribute("aria-disabled", String(pdFaltando()>=0));
   }
   $("pd-minus").onclick = () => { pd.qty=Math.max(1,pd.qty-1); pdUpdate(); };
@@ -334,8 +339,9 @@
 
   // ---------- carrinho ----------
   const prod = id => PRODUTOS.find(p=>p.id===id);
-  const subtotal = () => cart.reduce((a,l)=>a+(prod(l.produto_id)?.preco||0)*l.qtd,0);
-  const paes = () => cart.reduce((a,l)=>a+(prod(l.produto_id)?.paes_por_unidade??1)*l.qtd,0);
+  const precoLinha = l => OPC.linha(prod(l.produto_id), l.opcao).preco;
+  const subtotal = () => cart.reduce((a,l)=>a+(prod(l.produto_id) ? precoLinha(l) : 0)*l.qtd,0);
+  const paes = () => cart.reduce((a,l)=>{ const p=prod(l.produto_id); return a+(p?.paes_por_unidade??1)*OPC.linha(p,l.opcao).unid*l.qtd; },0);
   const nItens = () => cart.reduce((a,l)=>a+l.qtd,0);
   // mesma conta do banco (o banco é quem decide o valor final)
   function calcTaxa(km){
@@ -469,7 +475,7 @@
         <h3>Itens</h3>
         <div>${cart.map((l,i)=>{ const p=prod(l.produto_id); return `<div class="line">
           <div><div class="nm">${esc(p.nome)}</div>${l.opcao?`<div class="meta">${esc(l.opcao)}</div>`:""}${l.obs?`<div class="meta">Obs: ${esc(l.obs)}</div>`:""}</div>
-          <div class="pr">${brl(p.preco*l.qtd)}</div>
+          <div class="pr">${brl(precoLinha(l)*l.qtd)}</div>
           <div class="act"><button class="link" type="button" data-rm="${i}">Remover</button>
             <div class="stepper"><button type="button" data-dec="${i}" aria-label="Diminuir">−</button><output>${l.qtd}</output><button type="button" data-inc="${i}" aria-label="Aumentar">+</button></div></div>
         </div>`;}).join("")}</div>
@@ -599,7 +605,7 @@
     L.push("", SEP, "");
     r.itens.forEach(i => {
       L.push(`*${i.qtd}x ${i.nome.toUpperCase()}*  `);
-      if (i.opcao) escolha(i.opcao).forEach(e => L.push(` - ${i.qtd}x ${e}   `));
+      if (i.opcao) escolha(i.opcao).forEach(e => L.push(/\bunidades?\b/i.test(e) ? ` - ${e}${i.qtd>1?` (cada)`:""}   ` : ` - ${i.qtd}x ${e}   `));
       if (i.obs) L.push(` - Obs: ${i.obs}`);
       L.push("");
     });

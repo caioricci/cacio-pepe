@@ -581,28 +581,50 @@
     return "";
   }
 
+  // mensagem no mesmo formato do Goomer, com a data de entrega em destaque
   function mensagem(r, sel){
+    const SEP = "---------------------------------------";
+    const hora = new Date().toLocaleTimeString("pt-BR", { timeZone:"America/Sao_Paulo", hour:"2-digit", minute:"2-digit" });
+    const site = location.origin + "/?utm_source=whatsapp";
+    const escolha = o => o.split(";").map(x => x.split(":").pop().trim()).filter(Boolean);
     const L = [];
-    L.push(`*Pedido #${r.numero} — Cacio & Pepe*`, "");
-    L.push(`*${ck.modo==="Entrega"?"Entrega":"Retirada"}:* ${U.diaLongo(sel.data)} — ${sel.turno}${sel.horario?` (${sel.horario})`:""}`);
-    if (r.tipo==="extra") L.push("_(venda extra do dia)_");
-    L.push("", "*Itens*");
+    L.push("⭐ *GOSTOU DE PEDIR NO NOSSO SITE?* ⭐");
+    L.push("Não precisa baixar nada: adicione a Cacio & Pepe na tela inicial do seu celular e peça com mais agilidade na próxima vez pelo link abaixo:");
+    L.push(site);
+    L.push(SEP, "Confira o pedido abaixo:");
+    L.push(`*Pedido #${String(r.numero).padStart(4,"0")}* - _Cacio & Pepe_`);
+    L.push(SEP, "");
+    L.push(`*${ck.modo==="Entrega" ? "ENTREGA" : "RETIRADA"}: ${U.diaLongo(sel.data).toUpperCase()}*`);
+    L.push(`${sel.turno}${sel.horario ? ` (${sel.horario})` : ""}${r.tipo==="extra" ? " · venda extra do dia" : ""}`);
+    L.push("", SEP, "");
     r.itens.forEach(i => {
-      L.push(`${i.qtd}x ${i.nome} — ${brl(i.preco*i.qtd)}`);
-      if (i.opcao) L.push(`   ${i.opcao}`);
-      if (i.obs) L.push(`   Obs: ${i.obs}`);
+      L.push(`*${i.qtd}x ${i.nome.toUpperCase()}*  `);
+      if (i.opcao) escolha(i.opcao).forEach(e => L.push(` - ${i.qtd}x ${e}   `));
+      if (i.obs) L.push(` - Obs: ${i.obs}`);
+      L.push("");
     });
+    L.push(`*Subtotal:* ${brl(r.subtotal)}`);
+    if (ck.modo==="Entrega") {
+      const taxa = r.frete_gratis ? "Grátis" : r.frete_combinar ? "A combinar" : brl(r.taxa_entrega);
+      L.push(`*Taxa de entrega*:  ${taxa}`);
+    }
+    L.push(`*Total: ${brl(r.total)}*${r.frete_combinar ? " + entrega" : ""}`);
+    L.push("", SEP, "");
+    L.push(`*${D.nome.trim()}*`);
+    L.push(D.tel.trim());
     L.push("");
     if (ck.modo==="Entrega") {
-      L.push(`Subtotal: ${brl(r.subtotal)}`);
-      L.push(r.frete_gratis ? `Entrega: grátis (${r.frete_gratis})` : r.frete_combinar ? "Entrega: a combinar" : `Entrega${r.km!=null?` (${String(r.km).replace(".",",")} km)`:""}: ${brl(r.taxa_entrega)}`);
+      L.push(`${D.rua.trim()}, ${D.num.trim()}${D.comp.trim() ? ` - ${D.comp.trim()}` : ""}`);
+      L.push(`${D.bairro.trim()}, ${D.cidade.trim()}${D.uf ? `/${D.uf}` : ""}`);
+      if (D.cep) L.push(D.cep);
+    } else {
+      L.push(`Retirada: ${endPub()}`);
     }
-    L.push(`*Total: ${brl(r.total)}*${r.frete_combinar?" + entrega":""}`, "");
-    L.push(`*Nome:* ${D.nome.trim()}`);
-    L.push(`*Celular:* ${D.tel.trim()}`);
-    if (ck.modo==="Entrega") L.push(`*Endereço:* ${enderecoTexto()}`);
-    L.push(`*Pagamento:* ${ck.pag==="Pix"?"Pix (envio o comprovante aqui)":`${ck.pag} na ${ck.modo==="Entrega"?"entrega":"retirada"}`}${ck.pag==="Dinheiro"&&D.troco.trim()?` — troco para R$ ${D.troco.trim()}`:""}`);
+    L.push("");
+    const pag = ck.pag==="Pix" ? "Pix (comprovante em anexo)" : ck.pag;
+    L.push(`*Pagamento:* ${pag}${ck.pag==="Dinheiro" && D.troco.trim() ? ` (troco para R$ ${D.troco.trim()})` : ""} `);
     if (D.obs.trim()) L.push(`*Observação:* ${D.obs.trim()}`);
+    L.push("", `_Pedido feito pelo site às ${hora}_`);
     return L.join("\n");
   }
 

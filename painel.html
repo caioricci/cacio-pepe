@@ -753,6 +753,9 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
           <div class="fl"><label for="po_${id}">Ordem</label><input class="input" id="po_${id}" data-k="ordem" type="number" value="${p.ordem}"></div>
         </div>
         <label class="toggle"><span>Mostrar no cardápio</span><input type="checkbox" id="pa_${id}" data-k="ativo" ${p.ativo?"checked":""}></label>
+        <div class="fl"><span class="l">Dias de entrega</span>
+          <div class="filters">${[...new Set(JANELAS.filter(j=>j.ativo).map(j=>j.dia_semana))].sort().map(d=>`<label class="chip" style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" data-dia="${d}" ${(p.dias_semana||[]).includes(d)?"checked":""}>${U.DIAS[d]}</label>`).join("")}</div>
+          <span class="note">Nenhum marcado = sai em todos os dias de entrega. Ex: Cinnamon Roll só na sexta.</span></div>
         <div class="fl"><span class="l">Fotos</span><div class="photos" id="ph_${id}"></div></div>
         <div class="fl" data-ficha><span class="l">Ficha técnica</span><span class="note">Salve o produto e abra de novo para ver a ficha.</span></div>
         <div class="fl"><span class="l">Opções (ex: tipo de pesto)</span><div id="og_${id}" style="display:flex;flex-direction:column;gap:8px"></div>
@@ -803,6 +806,7 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
       const row = { nome:g("nome").value.trim()||"Sem nome", categoria:g("categoria").value.trim()||"Paninis", descricao:g("descricao").value.trim(),
         preco:Math.max(0, parseFloat(g("preco").value)||0), paes_por_unidade:Math.max(0, parseInt(g("paes_por_unidade").value,10)||0),
         ordem:parseInt(g("ordem").value,10)||0, ativo:g("ativo").checked, fotos:st.fotos,
+        dias_semana:[...box.querySelectorAll("[data-dia]:checked")].map(i=>+i.dataset.dia),
         opcoes:st.opcoes.filter(o=>o.nome.trim() && o.escolhas.length).map(o=>({ nome:o.nome.trim(), obrigatorio:!!o.obrigatorio, escolhas:o.escolhas })) };
       ev.target.disabled = true;
       const { data, error } = await sb.from("produtos").update(row).eq("id", p.id).select().single();
@@ -915,7 +919,8 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
         <b>Loja</b>
         <div class="f2">
           <div class="fl"><label for="c-wa">WhatsApp que recebe os pedidos</label><input class="input" id="c-wa" inputmode="tel" value="${esc(CFG.whatsapp)}" placeholder="5519999999999"><span class="note">Com 55 + DDD, só números.</span></div>
-          <div class="fl"><label for="c-ret">Endereço da loja (retirada e cálculo do frete)</label><input class="input" id="c-ret" value="${esc(CFG.endereco_retirada)}"><span class="note" id="c-loc">${CFG.loja_lat!=null?"Localização no mapa encontrada.":"Localização no mapa ainda não encontrada; salve para buscar."}</span></div>
+          <div class="fl"><label for="c-pub">Endereço que aparece pro cliente</label><input class="input" id="c-pub" value="${esc(CFG.endereco_publico||"")}" placeholder="Ex: Rua Barreto Leme – Centro, Campinas/SP"><span class="note">Sem o número. O número vai só pelo WhatsApp.</span></div>
+          <div class="fl"><label for="c-ret">Endereço completo da loja (só para calcular o frete)</label><input class="input" id="c-ret" value="${esc(CFG.endereco_retirada)}"><span class="note" id="c-loc">${CFG.loja_lat!=null?"Localização no mapa encontrada.":"Localização no mapa ainda não encontrada; salve para buscar."}</span></div>
         </div>
         <div class="fl"><label for="c-av">Aviso no topo do cardápio</label><input class="input" id="c-av" maxlength="200" value="${esc(CFG.aviso)}"></div>
 
@@ -1062,7 +1067,7 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
       e.preventDefault();
       const tipo = $("c-pxt").value;
       const row = { whatsapp:$("c-wa").value.replace(/\D/g,""), aviso:$("c-av").value.trim(),
-        pagamentos:$("c-pg").value.split(",").map(s=>s.trim()).filter(Boolean), endereco_retirada:$("c-ret").value.trim(),
+        pagamentos:$("c-pg").value.split(",").map(s=>s.trim()).filter(Boolean), endereco_retirada:$("c-ret").value.trim(), endereco_publico:$("c-pub").value.trim(),
         logo_url:marca.logo_url, capa_url:marca.capa_url,
         pix_chave: tipo ? PIX.normalizar(tipo, $("c-px").value) : "", pix_nome:$("c-pxn").value.trim()||"Cacio e Pepe",
         frete_modo:$("c-fm").value, taxa_entrega:Math.max(0,parseFloat($("c-tx").value)||0),

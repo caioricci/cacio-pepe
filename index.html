@@ -138,6 +138,7 @@
 .frete{border-radius:var(--r);padding:12px 14px;font-size:14px;background:var(--paper)}
 .frete b{font-variant-numeric:tabular-nums}
 .frete.bad{background:var(--mortadela);color:var(--on-mortadela)}
+.tag-dia{display:inline-block;margin-top:8px;font-size:12px;font-weight:700;border-radius:999px;padding:3px 10px;background:var(--mortadela);color:var(--on-mortadela)}
 .frete.gratis{background:var(--pistache);color:var(--on-pistache)}
 .frete.dica{margin-top:8px;background:transparent;border:1.5px dashed var(--line);color:var(--muted)}
 .frete.dica b{color:var(--ink)}
@@ -257,7 +258,7 @@
     if (CFG.logo_url) $("logo").src = CFG.logo_url;
     if (CFG.capa_url) { $("hero").style.backgroundImage = `url("${CFG.capa_url.replace(/"/g,"%22")}")`; $("hero").classList.add("has-capa"); }
     const pags = [...(CFG.pix_chave?["Pix"]:[]), ...CFG.pagamentos];
-    $("foot").innerHTML = `<span>Retirada: ${esc(CFG.endereco_retirada)}</span><span>Pagamento: ${esc(pags.join(", "))}</span>`;
+    $("foot").innerHTML = `<span>Retirada: ${esc(endPub())}</span><span>Pagamento: ${esc(pags.join(", "))}</span>`;
     if (CFG.loja_lat != null && CFG.loja_lng != null) LOJA = { lat:CFG.loja_lat, lng:CFG.loja_lng };
   }
   async function atualizarAgenda(){
@@ -286,7 +287,7 @@
     $("cats").hidden = cats.length < 2;
     $("menu").innerHTML = cats.map((c,i)=>`<section class="sec" id="cat-${i}"><h2>${esc(c)}</h2>${
       PRODUTOS.filter(p=>p.categoria===c).map(p=>`<button type="button" class="prod" data-id="${p.id}">
-        <div><h3>${esc(p.nome)}</h3><p>${esc(p.descricao)}</p><div class="price">${brl(p.preco)}</div></div>
+        <div><h3>${esc(p.nome)}</h3><p>${esc(p.descricao)}</p><div class="price">${brl(p.preco)}</div>${p.dias_semana?.length?`<span class="tag-dia">Entrega só ${diasFrase(p.dias_semana)}</span>`:""}</div>
         <div class="thumb">${p.fotos.length?`<img src="${esc(p.fotos[0])}" alt="" loading="lazy">${p.fotos.length>1?`<span class="n">${p.fotos.length} fotos</span>`:""}`:`<div class="noimg">${esc(p.nome[0])}</div>`}</div>
       </button>`).join("")}</section>`).join("");
     document.querySelectorAll(".prod").forEach(b => b.onclick = () => abrirProduto(b.dataset.id));
@@ -301,7 +302,7 @@
     const fotos = p.fotos || [];
     $("pd-body").innerHTML = `
       ${fotos.length?`<div class="gallery"><div class="slides" id="slides">${fotos.map(f=>`<img src="${esc(f)}" alt="${esc(p.nome)}">`).join("")}</div>${fotos.length>1?`<div class="dots" id="dots">${fotos.map((_,i)=>`<span class="${i?"":"on"}"></span>`).join("")}</div>`:""}</div>`:""}
-      <div class="pd gutter"><h3 id="pd-title">${esc(p.nome)}</h3><p>${esc(p.descricao)}</p><div class="price">${brl(p.preco)}</div></div>
+      <div class="pd gutter"><h3 id="pd-title">${esc(p.nome)}</h3><p>${esc(p.descricao)}</p><div class="price">${brl(p.preco)}</div>${p.dias_semana?.length?`<span class="tag-dia">Entrega só ${diasFrase(p.dias_semana)}</span>`:""}</div>
       ${(p.opcoes||[]).map((g,gi)=>`<div class="group gutter" role="radiogroup" aria-labelledby="g-${gi}">
         <div class="group-h"><div><b id="g-${gi}">${esc(g.nome)}</b><small>Escolha 1 opção</small></div>${g.obrigatorio?`<span class="req" id="req-${gi}">Obrigatório</span>`:""}</div>
         ${(g.escolhas||[]).map((e,ei)=>`<label class="choice"><span>${esc(e)}</span><input type="radio" name="g${gi}" id="g${gi}-${ei}" value="${esc(e)}" data-g="${gi}"></label>`).join("")}
@@ -379,6 +380,11 @@
   }
   $("open-cart").onclick = () => { ck.err=""; ck.finalizado=false; $("ck-title").textContent="Meu pedido"; renderCheckout(); abrir("ck-scrim"); atualizarAgenda(); };
 
+  function endPub(){ return (CFG.endereco_publico || CFG.endereco_retirada.replace(/,\s*\d+[A-Za-z]?\b/, "")).trim(); }
+  function diasFrase(ds){ return ds.slice().sort().map(d => (d===0||d===6 ? "aos " : "às ") + U.DIAS[d] + "s").join(" e ").replace(/ e (aos|às) /g, " e "); }
+  // dias em que todos os itens do carrinho podem ser entregues (null = qualquer dia)
+  function restricoes(){ return cart.map(l => prod(l.produto_id)).filter(p => p && p.dias_semana?.length); }
+  function slotCompat(s){ return restricoes().every(p => p.dias_semana.includes(s.dia_semana)); }
   function slotInfo(s){
     const need = paes();
     if (s.livres <= 0) return { ok:false, txt:"Esgotado", cls:"none" };
@@ -448,9 +454,11 @@
       return;
     }
     $("ck-foot").hidden = false;
-    if (ck.slot && !SLOTS.some(s=>s.data+"|"+s.janela_id===ck.slot && slotInfo(s).ok)) ck.slot = null;
+    if (ck.slot && !SLOTS.some(s=>s.data+"|"+s.janela_id===ck.slot && slotInfo(s).ok && slotCompat(s))) ck.slot = null;
     const days = {};
-    SLOTS.forEach(s => (days[s.data] ||= []).push(s));
+    const SLOTS_OK = SLOTS.filter(slotCompat);
+    SLOTS_OK.forEach(s => (days[s.data] ||= []).push(s));
+    const restr = restricoes();
     const sel = SLOTS.find(s=>s.data+"|"+s.janela_id===ck.slot);
     const onde = ck.modo==="Entrega" ? "entrega" : "retirada";
     const temPix = !!CFG.pix_chave;
@@ -472,14 +480,16 @@
         <h3>Como você quer receber?</h3>
         <div class="seg">
           <button type="button" class="opt" id="m-ent" aria-pressed="${ck.modo==="Entrega"}"><b>Entrega</b><small>${CFG.frete_modo==="fixo"?(Number(CFG.taxa_entrega)>0?`Taxa ${brl(CFG.taxa_entrega)}`:"No seu endereço"):(GRATIS.find(g=>!g.janelas.length&&g.bairros.length)?`Grátis: ${esc(GRATIS.find(g=>!g.janelas.length&&g.bairros.length).bairros.join(" e "))}`:"Taxa pela distância")}</small></button>
-          <button type="button" class="opt" id="m-ret" aria-pressed="${ck.modo==="Retirada"}"><b>Retirada</b><small>${esc(CFG.endereco_retirada.split(/[–,]/)[0])}</small></button>
+          <button type="button" class="opt" id="m-ret" aria-pressed="${ck.modo==="Retirada"}"><b>Retirada</b><small>${esc(endPub().split(/[–,]/)[0])}</small></button>
         </div>
       </div>
 
       ${ck.modo?`<div class="ck-sec gutter">
         <h3>Para quando?</h3>
-        <p class="sub">Só aparecem as datas com encomendas abertas e pão para o seu pedido (${paes()} ${paes()>1?"ciabattas":"ciabatta"}).</p>
+        <p class="sub">Só aparecem as datas com encomendas abertas${paes()?` e pão para o seu pedido (${paes()} ${paes()>1?"ciabattas":"ciabatta"})`:""}.</p>
+        ${restr.length?`<div class="frete dica">${restr.map(p=>`<b>${esc(p.nome)}</b> sai só ${diasFrase(p.dias_semana)}`).join("; ")}, por isso só aparecem esses dias.</div>`:""}
         ${CFG.vendas_pausadas||!SLOTS.length?`<p class="err">Não há datas abertas agora. Volte mais tarde ou fale com a gente no WhatsApp.</p>`:
+        !SLOTS_OK.length?`<p class="err">Não há ${diasFrase([...new Set(restr.flatMap(p=>p.dias_semana))]).replace(/^(às|aos) /,"")} abertas agora. Tire do carrinho o que só sai nesse dia ou fale com a gente no WhatsApp.</p>`:
         `<div class="days">${Object.entries(days).map(([d,ss])=>`<div class="day"><h4>${U.diaLongo(d)}</h4><div class="slots">${ss.map(s=>{const k=s.data+"|"+s.janela_id; const inf=slotInfo(s); return `
           <button type="button" class="opt slot" data-slot="${k}" aria-pressed="${ck.slot===k}" ${inf.ok?"":"disabled"}>
             <b>${esc(s.turno)}${s.horario?` · ${esc(s.horario)}`:""}</b>
@@ -505,7 +515,7 @@
         </div>
         <div class="field"><label for="d-comp">Complemento e referência (opcional)</label><input class="input" id="d-comp" data-d="comp" maxlength="100" placeholder="Apto, bloco, ponto de referência" value="${v("comp")}"></div>
         <div id="frete-box">${freteHTML()}</div>`:
-        `<div class="frete">Retirada em <b>${esc(CFG.endereco_retirada)}</b></div>`}
+        `<div class="frete">Retirada em <b>${esc(endPub())}</b>. O número a gente manda no WhatsApp.</div>`}
       </div>
 
       <div class="ck-sec gutter">

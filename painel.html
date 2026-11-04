@@ -472,14 +472,20 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
     const el = $("t-producao");
     el.innerHTML = `<p class="note">Carregando…</p>`;
     await carregarProducao();
-    const dias = {}; JAN.forEach(j => (dias[j.data] ||= []).push(j));
+    // turnos que já passaram do corte, sem vendas extras e sem nenhum pedido saem da tela sozinhos
+    const agora = new Intl.DateTimeFormat("sv-SE", { timeZone:"America/Sao_Paulo", year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit", second:"2-digit" }).format(new Date()).replace(" ", "T");
+    const temPedido = j => PEDS.some(p => p.data===j.data && p.janela_id===j.janela_id);
+    const encerradoVazio = j => !j.bloqueado && !j.vendas_extras && String(j.corte).slice(0,19) <= agora && !temPedido(j);
+    const escondidos = JAN.filter(encerradoVazio).length;
+    const dias = {}; JAN.filter(j => !encerradoVazio(j)).forEach(j => (dias[j.data] ||= []).push(j));
     el.innerHTML = `
       <div class="bar"><h2>Produção</h2><p class="note">A capacidade de cada horário usa os pães aprovados; sem aprovados, os planejados; sem nada, a capacidade padrão.</p></div>
       <div class="card global ${CFG.vendas_pausadas?"on":""}">
         <label class="toggle" style="flex:1"><span>Pausar todas as encomendas<small>O cardápio continua no ar, mas ninguém consegue pedir. Pedidos feitos continuam valendo.</small></span>
         <input type="checkbox" id="pausa" ${CFG.vendas_pausadas?"checked":""}></label>
       </div>
-      ${Object.keys(dias).length?Object.entries(dias).map(([d,js])=>`<div class="day-h">${U.diaLongo(d)}</div><div class="grid">${js.map(cardJanela).join("")}</div>`).join(""):`<p class="empty">Nenhum horário de entrega nas próximas duas semanas. Confira os horários em Ajustes.</p>`}`;
+      ${Object.keys(dias).length?Object.entries(dias).map(([d,js])=>`<div class="day-h">${U.diaLongo(d)}</div><div class="grid">${js.map(cardJanela).join("")}</div>`).join(""):`<p class="empty">Nenhum horário de entrega nas próximas duas semanas. Confira os horários em Ajustes.</p>`}
+      ${escondidos?`<p class="note" style="margin-top:14px">${escondidos} turno${escondidos>1?"s":""} já encerrado${escondidos>1?"s":""} sem pedidos ${escondidos>1?"foram escondidos":"foi escondido"}.</p>`:""}`;
     $("pausa").onchange = async e => {
       const { error } = await sb.from("config").update({ vendas_pausadas: e.target.checked }).eq("id",1);
       if (error) { toast(U.erro(error)); e.target.checked = !e.target.checked; return; }

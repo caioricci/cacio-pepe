@@ -98,6 +98,16 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
 .btn-danger{background:transparent;color:var(--danger);border:1.5px solid var(--line)}
 .ped.cancelado{opacity:.6}
 
+.wait{font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.wait.late{color:var(--danger)}
+.combo{background:var(--pistache);color:var(--on-pistache);border-radius:var(--r-sm);padding:6px 10px;font-size:14px}
+.nota{border-left:3px solid var(--line);padding:2px 10px;font-size:13px;color:var(--muted);font-style:italic}
+.btn-wa,.ped a.btn-wa{background:#1F8F4E;color:#fff;text-decoration:none}
+.it-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:6px 14px}
+.it-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;min-width:0}
+.it-row small{color:var(--muted)}
+.it-row .it-q{width:72px;flex:none;padding:7px 8px}
+#f-novo{border:2px solid var(--pesto)}
 /* cardápio */
 .pe summary{cursor:pointer;display:flex;gap:12px;align-items:center;list-style:none}
 .pe summary::-webkit-details-marker{display:none}
@@ -335,58 +345,205 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
 
   // ---------- PEDIDOS ----------
   const STATUS = { aguardando:"Aguardando", confirmado:"Confirmado", entregue:"Entregue", cancelado:"Cancelado" };
+  const CANAIS = { site:"Site", whatsapp:"WhatsApp", instagram:"Instagram", presencial:"Presencial", outro:"Outro" };
+  let pedEdit = null, novoAberto = false, PEDS_LISTA = [];
+  const jTurno = id => JANELAS.find(j=>j.id===id)?.turno || id;
+  const janelasDoDia = d => d ? JANELAS.filter(j => j.ativo && j.dia_semana === U.parseData(d).dow) : [];
+  const pagsTodas = () => [...new Set([...(CFG.pix_chave?["Pix"]:[]), "Pix", ...CFG.pagamentos])];
+  function haQuanto(ts){
+    const min = Math.max(0, Math.round((Date.now() - new Date(ts).getTime())/60000));
+    if (min < 60) return `${min} min`;
+    const h = Math.floor(min/60), m = min%60;
+    return h < 24 ? `${h}h${m?String(m).padStart(2,"0"):""}` : `${Math.floor(h/24)} dia${h>=48?"s":""}`;
+  }
+  function telWa(t){ const d=(t||"").replace(/\D/g,""); return d.length>=10 && !d.startsWith("55") ? "55"+d : d; }
+  function msgRecuperacao(p){
+    const itens = p.itens.map(i=>`${i.qtd} ${i.nome}`).join(", ");
+    const data = `${U.diaLongo(p.data)}, ${jTurno(p.janela_id).toLowerCase()}`;
+    return (CFG.msg_recuperacao||"").replace(/\{nome\}/g, (p.nome||"").split(" ")[0]).replace(/\{data\}/g, data)
+      .replace(/\{itens\}/g, itens).replace(/\{total\}/g, brl(p.total));
+  }
+
   async function renderPedidos(){
     const el = $("t-pedidos");
     if (!el.innerHTML) el.innerHTML = `<p class="note">Carregando…</p>`;
     const de = U.somaDias(hoje(), -7);
     const { data, error } = await sb.from("pedidos").select("*").gte("data", de).order("data").order("janela_id").order("numero");
     if (error) { el.innerHTML = `<p class="err">${esc(U.erro(error))}</p>`; return; }
+    PEDS_LISTA = data;
     const filtros = [["ativos","Ativos"],["aguardando","Aguardando"],["confirmado","Confirmados"],["entregue","Entregues"],["cancelado","Cancelados"],["todos","Todos"]];
     const lista = data.filter(p => pedFiltro==="todos" ? true : pedFiltro==="ativos" ? (p.status==="aguardando"||p.status==="confirmado") : p.status===pedFiltro);
-    const jn = id => JANELAS.find(j=>j.id===id)?.turno || id;
+    const ordem = { aguardando:0, confirmado:1, entregue:2, cancelado:3 };
     const grupos = {}; lista.forEach(p => (grupos[p.data+"|"+p.janela_id] ||= []).push(p));
+    Object.values(grupos).forEach(ps => ps.sort((a,b)=> ordem[a.status]-ordem[b.status] || (a.status==="aguardando" ? new Date(a.criado_em)-new Date(b.criado_em) : a.numero-b.numero)));
+    const parados = data.filter(p=>p.status==="aguardando").length;
     el.innerHTML = `
-      <div class="bar"><h2>Pedidos</h2><div class="filters">${filtros.map(([v,l])=>`<button class="chip" type="button" data-f="${v}" aria-pressed="${pedFiltro===v}">${l}</button>`).join("")}</div></div>
+      <div class="bar"><h2>Pedidos</h2><button class="btn btn-primary" type="button" id="btn-novo">${novoAberto?"Fechar":"Novo pedido avulso"}</button></div>
+      <div class="filters">${filtros.map(([v,l])=>`<button class="chip" type="button" data-f="${v}" aria-pressed="${pedFiltro===v}">${l}${v==="aguardando"&&parados?` (${parados})`:""}</button>`).join("")}</div>
+      ${novoAberto?`<form class="card" id="f-novo">${formPedidoHTML(null)}</form>`:""}
       ${lista.length?Object.entries(grupos).map(([k,ps])=>{ const [d,j]=k.split("|"); const tot=ps.filter(p=>p.status!=="cancelado").reduce((a,p)=>a+Number(p.total),0);
-        return `<div class="day-h">${U.diaLongo(d)} · ${esc(jn(j))} <span class="note" style="text-transform:none">— ${ps.length} pedido${ps.length>1?"s":""}, ${brl(tot)}</span></div><div class="grid">${ps.map(cardPedido).join("")}</div>`;}).join("")
+        return `<div class="day-h">${U.diaLongo(d)} · ${esc(jTurno(j))} <span class="note">— ${ps.length} pedido${ps.length>1?"s":""}, ${brl(tot)}</span></div><div class="grid">${ps.map(p=> pedEdit===p.id ? `<form class="card" data-edit="${p.id}">${formPedidoHTML(p)}</form>` : cardPedido(p)).join("")}</div>`;}).join("")
         :`<p class="empty">Nenhum pedido nesse filtro.</p>`}`;
+    $("btn-novo").onclick = () => { novoAberto = !novoAberto; pedEdit = null; renderPedidos(); };
     el.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { pedFiltro = b.dataset.f; renderPedidos(); });
     el.querySelectorAll("[data-act]").forEach(b => b.onclick = () => acaoPedido(b));
+    el.querySelectorAll("[data-editar]").forEach(b => b.onclick = () => { pedEdit = b.dataset.editar; novoAberto = false; renderPedidos(); });
+    if (novoAberto) ligarForm($("f-novo"), null);
+    el.querySelectorAll("form[data-edit]").forEach(f => ligarForm(f, PEDS_LISTA.find(p=>p.id===f.dataset.edit)));
   }
+
   function cardPedido(p){
-    const tel = (p.telefone||"").replace(/\D/g,""); const telBR = tel.length>=10 && !tel.startsWith("55") ? "55"+tel : tel;
+    const tel = telWa(p.telefone);
+    const atraso = p.status==="aguardando" ? (Date.now()-new Date(p.criado_em).getTime())/60000 : 0;
     return `<div class="card ped ${p.status}">
       <div class="ph"><div><div class="num">#${p.numero}</div><div class="who">${esc(p.nome)}</div>
-        <div class="meta">${tel?`<a href="https://wa.me/${telBR}" target="_blank" rel="noopener">${esc(p.telefone)}</a>`:""}${p.tipo==="extra"?" · venda extra":""}</div></div>
-        <span class="st ${p.status}">${STATUS[p.status]}</span></div>
+        <div class="meta">${tel?`<a href="https://wa.me/${tel}" target="_blank" rel="noopener">${esc(p.telefone)}</a>`:"sem telefone"}${p.canal!=="site"?` · <b>${CANAIS[p.canal]}</b>`:""}${p.tipo==="extra"?" · venda extra":""}</div></div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><span class="st ${p.status}">${STATUS[p.status]}</span>
+        ${p.status==="aguardando"?`<span class="wait ${atraso>=60?"late":""}">há ${haQuanto(p.criado_em)}</span>`:""}</div></div>
+      ${p.horario_combinado?`<div class="combo">Horário combinado: <b>${esc(p.horario_combinado)}</b></div>`:""}
       <div class="meta"><b style="color:var(--ink)">${p.modo}</b>${p.modo==="Entrega"?` — ${esc(p.endereco)}<br>Frete: ${p.frete_gratis?`<b style="color:var(--ok)">grátis</b> (${esc(p.frete_gratis)})`:p.frete_combinar?"<b style=\"color:var(--danger)\">a combinar</b>":`${brl(p.taxa_entrega)}${p.km!=null?` (${String(p.km).replace(".",",")} km)`:""}`}`:""}</div>
       <ul>${p.itens.map(i=>`<li>${i.qtd}× ${esc(i.nome)}${i.opcao?` <small>(${esc(i.opcao)})</small>`:""}${i.obs?`<br><small>Obs: ${esc(i.obs)}</small>`:""}</li>`).join("")}</ul>
-      ${p.obs?`<div class="meta">Observação: ${esc(p.obs)}</div>`:""}
+      ${p.obs?`<div class="meta">Observação do cliente: ${esc(p.obs)}</div>`:""}
+      ${p.nota_interna?`<div class="nota">${esc(p.nota_interna)}</div>`:""}
+      ${p.cancelado_motivo&&p.status==="cancelado"?`<div class="meta">${esc(p.cancelado_motivo)}</div>`:""}
       <div class="tot"><span>${esc(p.pagamento)}${p.troco?` · troco p/ ${esc(p.troco)}`:""} · ${p.pago?"pago":"a receber"}</span><span>${brl(p.total)}</span></div>
       <div class="acts">
+        ${p.status==="aguardando"&&tel?`<a class="btn btn-wa" href="https://wa.me/${tel}?text=${encodeURIComponent(msgRecuperacao(p))}" target="_blank" rel="noopener">Chamar no WhatsApp</a>`:""}
         ${p.status==="aguardando"?`<button class="btn btn-primary" type="button" data-act="confirmado" data-id="${p.id}">Confirmar</button>`:""}
         ${p.status==="confirmado"?`<button class="btn btn-primary" type="button" data-act="entregue" data-id="${p.id}">Marcar entregue</button>`:""}
         ${p.status!=="cancelado"?`<button class="btn btn-ghost" type="button" data-act="pago" data-v="${!p.pago}" data-id="${p.id}">${p.pago?"Desmarcar pago":"Marcar pago"}</button>`:""}
+        <button class="btn btn-ghost" type="button" data-editar="${p.id}">Editar</button>
         ${p.status==="aguardando"||p.status==="confirmado"?`<button class="btn btn-danger" type="button" data-act="cancelar" data-id="${p.id}">Cancelar</button>`:""}
         ${p.status==="cancelado"||p.status==="entregue"?`<button class="btn btn-ghost" type="button" data-act="confirmado" data-id="${p.id}">Reabrir</button>`:""}
       </div>
     </div>`;
   }
+
+  // formulário único: novo pedido avulso (p = null) ou edição de um pedido
+  function formPedidoHTML(p){
+    const n = !p; const id = n ? "novo" : p.id.slice(0,8);
+    const d = p?.data || "";
+    const linhasItens = PRODS.filter(x=>x.ativo || n===false).flatMap(pr => {
+      const g = (pr.opcoes||[])[0]; const ops = g && g.escolhas?.length ? g.escolhas.map(e=>`${g.nome}: ${e}`) : [""];
+      return ops.map(op => `<div class="it-row"><span>${esc(pr.nome)}${op?` <small>${esc(op.split(": ")[1])}</small>`:""}</span>
+        <input class="input it-q" type="number" min="0" max="50" inputmode="numeric" value="0" data-pid="${pr.id}" data-op="${esc(op)}" aria-label="Quantidade ${esc(pr.nome)} ${esc(op)}"></div>`);
+    }).join("");
+    return `
+      <div class="jh"><b>${n?"Novo pedido avulso":`Editar pedido #${p.numero}`}</b>${n?"":`<span class="note">${CANAIS[p.canal]}</span>`}</div>
+      <div class="f3">
+        ${n?`<div class="fl"><label for="pf-canal-${id}">Veio por</label><select class="input" id="pf-canal-${id}" name="canal">${["whatsapp","instagram","presencial","outro"].map(c=>`<option value="${c}">${CANAIS[c]}</option>`).join("")}</select></div>`:""}
+        <div class="fl"><label for="pf-nome-${id}">Nome</label><input class="input" id="pf-nome-${id}" name="nome" maxlength="80" value="${esc(p?.nome||"")}" required></div>
+        <div class="fl"><label for="pf-tel-${id}">Celular</label><input class="input" id="pf-tel-${id}" name="telefone" inputmode="tel" maxlength="30" value="${esc(p?.telefone||"")}"></div>
+      </div>
+      <div class="f3">
+        <div class="fl"><label for="pf-data-${id}">Data de entrega</label><input class="input" id="pf-data-${id}" name="data" type="date" value="${d}" required></div>
+        <div class="fl"><label for="pf-jan-${id}">Turno</label><select class="input" id="pf-jan-${id}" name="janela_id" required></select></div>
+        <div class="fl"><label for="pf-hora-${id}">Horário combinado</label><input class="input" id="pf-hora-${id}" name="horario_combinado" maxlength="40" placeholder="Ex: 12h40" value="${esc(p?.horario_combinado||"")}"></div>
+      </div>
+      <div class="cap note" data-cap></div>
+      ${n?`<div class="fl"><span class="l">Itens</span><div class="it-list">${linhasItens}</div></div>`:
+        `<div class="fl"><span class="l">Itens</span><div class="note">${p.itens.map(i=>`${i.qtd}× ${esc(i.nome)}${i.opcao?` (${esc(i.opcao)})`:""}`).join(" · ")}. Para mudar os itens, cancele e lance um novo.</div></div>`}
+      <div class="f3">
+        <div class="fl"><label for="pf-modo-${id}">Recebimento</label><select class="input" id="pf-modo-${id}" name="modo">${["Entrega","Retirada"].map(m=>`<option ${(p?.modo||"Entrega")===m?"selected":""}>${m}</option>`).join("")}</select></div>
+        <div class="fl" data-ent><label for="pf-taxa-${id}">Taxa de entrega (R$)</label><input class="input" id="pf-taxa-${id}" name="taxa_entrega" type="number" step="0.5" min="0" value="${p?Number(p.taxa_entrega):0}"></div>
+        <div class="fl"><label for="pf-pag-${id}">Pagamento</label><select class="input" id="pf-pag-${id}" name="pagamento">${pagsTodas().map(f=>`<option ${p?.pagamento===f?"selected":""}>${esc(f)}</option>`).join("")}</select></div>
+      </div>
+      <div class="fl" data-ent><label for="pf-end-${id}">Endereço de entrega</label><textarea class="input" id="pf-end-${id}" name="endereco" maxlength="300">${esc(p?.endereco||"")}</textarea></div>
+      <div class="f2">
+        <div class="fl"><label for="pf-obs-${id}">Observação do cliente</label><input class="input" id="pf-obs-${id}" name="obs" maxlength="500" value="${esc(p?.obs||"")}"></div>
+        <div class="fl"><label for="pf-nota-${id}">Nota interna (só vocês veem)</label><input class="input" id="pf-nota-${id}" name="nota_interna" maxlength="500" placeholder="Ex: Uber Moto pedido às 12h20" value="${esc(p?.nota_interna||"")}"></div>
+      </div>
+      ${n?`<div class="f2"><label class="toggle"><span>Já está pago</span><input type="checkbox" name="pago"></label>
+        <div class="fl"><label for="pf-st-${id}">Situação</label><select class="input" id="pf-st-${id}" name="status"><option value="confirmado">Confirmado</option><option value="aguardando">Aguardando</option></select></div></div>`:""}
+      <div class="row-act"><span class="note" data-total style="margin-right:auto"></span>${n?"":`<button class="btn btn-ghost" type="button" data-cancel>Fechar</button>`}<button class="btn btn-primary" type="submit">${n?"Lançar pedido":"Salvar alterações"}</button></div>`;
+  }
+
+  function ligarForm(f, p){
+    const g = name => f.elements[name];
+    const n = !p;
+    const itensDoForm = () => [...f.querySelectorAll(".it-q")].map(i => ({ pr: PRODS.find(x=>x.id===i.dataset.pid), op: i.dataset.op, q: Math.max(0, parseInt(i.value,10)||0) })).filter(x=>x.q>0 && x.pr);
+    const subtotal = () => n ? itensDoForm().reduce((a,x)=>a+x.q*Number(x.pr.preco),0) : Number(p.subtotal);
+    const paesDoForm = () => n ? itensDoForm().reduce((a,x)=>a+x.q*(x.pr.paes_por_unidade??1),0) : p.paes;
+    let capInfo = null;
+    const preencherTurnos = () => {
+      const js = janelasDoDia(g("data").value);
+      const atual = g("janela_id").value || p?.janela_id;
+      g("janela_id").innerHTML = js.length ? js.map(j=>`<option value="${esc(j.id)}" ${j.id===atual?"selected":""}>${esc(j.turno)}${j.horario?` (${esc(j.horario)})`:""}</option>`).join("") : `<option value="">Sem entrega nesse dia</option>`;
+    };
+    const verCapacidade = async () => {
+      const d = g("data").value, j = g("janela_id").value; const box = f.querySelector("[data-cap]");
+      if (!d || !j) { box.textContent = ""; capInfo = null; return; }
+      const { data } = await sb.rpc("painel_janelas", { p_de:d, p_ate:d });
+      capInfo = (data||[]).find(x=>x.janela_id===j) || null;
+      atualizar();
+    };
+    const atualizar = () => {
+      const ent = g("modo").value === "Entrega";
+      f.querySelectorAll("[data-ent]").forEach(e => e.hidden = !ent);
+      const taxa = ent ? Math.max(0, parseFloat(g("taxa_entrega").value)||0) : 0;
+      f.querySelector("[data-total]").textContent = `Total: ${brl(subtotal()+taxa)}${n?` · ${paesDoForm()} ciabatta${paesDoForm()===1?"":"s"}`:""}`;
+      const box = f.querySelector("[data-cap]");
+      if (capInfo) {
+        const proprio = (!n && p.status!=="cancelado" && p.data===g("data").value && p.janela_id===g("janela_id").value) ? p.paes : 0;
+        const livres = capInfo.livres + proprio, precisa = paesDoForm();
+        box.innerHTML = `Nesse turno: <b>${livres}</b> ciabatta${livres===1?"":"s"} livre${livres===1?"":"s"} de ${capInfo.capacidade}.`
+          + (precisa > livres ? ` <b style="color:var(--danger)">Esse pedido passa da produção em ${precisa-livres}.</b> Dá pra lançar mesmo assim; ajuste os pães planejados em Produção.` : "");
+      } else box.textContent = "";
+    };
+    preencherTurnos();
+    g("data").addEventListener("change", () => { preencherTurnos(); verCapacidade(); });
+    g("janela_id").addEventListener("change", verCapacidade);
+    f.addEventListener("input", atualizar);
+    f.querySelector("[data-cancel]")?.addEventListener("click", () => { pedEdit = null; renderPedidos(); });
+    verCapacidade(); atualizar();
+
+    f.onsubmit = async e => {
+      e.preventDefault();
+      const nome = g("nome").value.trim(); const data = g("data").value; const janela_id = g("janela_id").value;
+      if (nome.length < 2) { toast("Coloque o nome do cliente."); return; }
+      if (!data || !janela_id) { toast("Escolha uma data com entrega e o turno."); return; }
+      const modo = g("modo").value; const ent = modo==="Entrega";
+      const taxa = ent ? Math.max(0, parseFloat(g("taxa_entrega").value)||0) : 0;
+      const comum = { nome, telefone:g("telefone").value.trim(), data, janela_id, horario_combinado:g("horario_combinado").value.trim(),
+        modo, endereco: ent ? g("endereco").value.trim() : "", taxa_entrega:taxa, pagamento:g("pagamento").value,
+        obs:g("obs").value.trim(), nota_interna:g("nota_interna").value.trim(), atualizado_em:new Date().toISOString() };
+      const btn = f.querySelector("button[type=submit]"); btn.disabled = true;
+      let error;
+      if (n) {
+        const its = itensDoForm();
+        if (!its.length) { toast("Coloque pelo menos um item."); btn.disabled=false; return; }
+        const itens = its.map(x=>({ produto_id:x.pr.id, nome:x.pr.nome, opcao:x.op, qtd:x.q, preco:Number(x.pr.preco), obs:"" }));
+        const sub = subtotal();
+        ({ error } = await sb.from("pedidos").insert({ ...comum, canal:g("canal").value, itens, paes:paesDoForm(), subtotal:sub, total:sub+taxa,
+          status:g("status").value, pago:g("pago").checked, tipo:"regular" }));
+      } else {
+        ({ error } = await sb.from("pedidos").update({ ...comum, total:Number(p.subtotal)+taxa, frete_gratis: taxa>0 ? "" : p.frete_gratis, frete_combinar: ent && taxa===0 && p.frete_combinar }).eq("id", p.id));
+      }
+      btn.disabled = false;
+      if (error) { toast(U.erro(error)); return; }
+      toast(n ? "Pedido lançado" : "Pedido atualizado");
+      novoAberto = false; pedEdit = null; renderPedidos();
+    };
+  }
+
   async function acaoPedido(b){
     const id = b.dataset.id, a = b.dataset.act;
     if (a==="cancelar" && b.dataset.sure!=="1") { b.dataset.sure="1"; b.textContent="Toque de novo para cancelar"; setTimeout(()=>{ if(b.isConnected){ b.dataset.sure=""; b.textContent="Cancelar"; } },4000); return; }
-    const patch = a==="pago" ? { pago: b.dataset.v==="true" } : { status: a==="cancelar" ? "cancelado" : a };
+    const patch = a==="pago" ? { pago: b.dataset.v==="true" } : { status: a==="cancelar" ? "cancelado" : a, cancelado_motivo: a==="cancelar" ? "Cancelado pela equipe" : "" };
+    patch.atualizado_em = new Date().toISOString();
     b.disabled = true;
     const { error } = await sb.from("pedidos").update(patch).eq("id", id);
     if (error) { toast(U.erro(error)); b.disabled=false; return; }
     toast(a==="cancelar"?"Pedido cancelado, pães liberados":"Pedido atualizado"); renderPedidos();
   }
+  // atualiza o "há X min" sem atrapalhar quem está digitando
+  setInterval(() => { if (tab==="pedidos" && !novoAberto && !pedEdit && !document.hidden) renderPedidos(); }, 60000);
 
   // ---------- tempo real ----------
   function tempoReal(){
     sb.channel("painel").on("postgres_changes", { event:"*", schema:"public", table:"pedidos" }, payload => {
       if (payload.eventType==="INSERT") { toast(`Novo pedido #${payload.new.numero} — ${payload.new.nome}`); if (tab!=="pedidos") { novos++; $("b-ped").textContent=novos; $("b-ped").hidden=false; } }
-      if (tab==="pedidos") renderPedidos(); else if (tab==="producao") renderProducao();
+      if (tab==="pedidos") { if (!novoAberto && !pedEdit) renderPedidos(); } else if (tab==="producao") renderProducao();
     }).subscribe();
   }
 
@@ -554,6 +711,12 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
           <div class="fl"><label for="c-tx">Taxa fixa (R$)</label><input class="input" id="c-tx" type="number" step="0.01" min="0" value="${CFG.taxa_entrega}"></div>
         </div>
         <span class="note" id="fr-sim"></span>
+
+        <b style="margin-top:8px">Pedidos que não foram finalizados</b>
+        <div class="f2">
+          <div class="fl"><label for="c-exp">Cancelar sozinho depois de (horas)</label><input class="input" id="c-exp" type="number" step="0.5" min="0" value="${CFG.expirar_horas}"><span class="note">Pedidos do site que ficam "Aguardando" esse tempo são cancelados e os pães voltam pra venda. 0 = nunca.</span></div>
+          <div class="fl"><label for="c-rec">Mensagem do botão "Chamar no WhatsApp"</label><textarea class="input" id="c-rec" maxlength="600">${esc(CFG.msg_recuperacao)}</textarea><span class="note">Use {nome}, {data}, {itens} e {total}; o painel troca pelos dados do pedido.</span></div>
+        </div>
         <div class="row-act"><button class="btn btn-primary" type="submit">Salvar loja</button></div>
       </form>
 
@@ -665,7 +828,8 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
         pix_chave: tipo ? PIX.normalizar(tipo, $("c-px").value) : "", pix_nome:$("c-pxn").value.trim()||"Cacio e Pepe",
         frete_modo:$("c-fm").value, taxa_entrega:Math.max(0,parseFloat($("c-tx").value)||0),
         frete_base:Math.max(0,parseFloat($("c-fb").value)||0), frete_km:Math.max(0,parseFloat($("c-fk").value)||0),
-        frete_min:Math.max(0,parseFloat($("c-fmin").value)||0), frete_raio_km:Math.max(0,parseFloat($("c-fr").value)||0) };
+        frete_min:Math.max(0,parseFloat($("c-fmin").value)||0), frete_raio_km:Math.max(0,parseFloat($("c-fr").value)||0),
+        expirar_horas:Math.max(0,parseFloat($("c-exp").value)||0), msg_recuperacao:$("c-rec").value.trim() };
       if (!row.pagamentos.length && !row.pix_chave) { toast("Coloque pelo menos uma forma de pagamento."); return; }
       if (tipo && !row.pix_chave.replace(/\D/g,"") && tipo!=="email" && tipo!=="aleatoria") { toast("Preencha a chave Pix."); return; }
       const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true;

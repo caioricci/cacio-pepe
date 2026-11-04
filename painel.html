@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="base.css">
 <style>
-body{background:var(--paper)}
+body{background:var(--bg)}
 .gutter{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .wrap{max-width:1080px;margin:0 auto}
 
@@ -18,7 +18,7 @@ body{background:var(--paper)}
 .login form{background:var(--bg);border:1px solid var(--line);border-radius:var(--r-lg);padding:28px;width:100%;max-width:380px;display:flex;flex-direction:column;gap:14px}
 .login h1{font-family:var(--display);font-weight:400;font-size:34px;margin:0;line-height:1}
 .login p{margin:0;color:var(--muted);font-size:14px}
-.swap{all:unset;cursor:pointer;color:var(--pesto);font-weight:600;font-size:14px}
+.swap{all:unset;cursor:pointer;color:var(--vinho);font-weight:600;font-size:14px}
 
 /* topo */
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--hero);color:#fff}
@@ -38,7 +38,7 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
 .bar h2{font-family:var(--display);font-weight:400;font-size:28px;margin:0}
 .note{color:var(--muted);font-size:13px;margin:0}
 
-.card{background:var(--bg);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:14px}
 .day-h{font-weight:800;margin:8px 0 -4px}
 .day-h::first-letter{text-transform:uppercase}
@@ -49,7 +49,7 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
 .jh b{font-size:17px}
 .jh small{display:block;color:var(--muted);font-size:13px}
 .meter{height:10px;border-radius:999px;background:var(--paper);overflow:hidden}
-.meter span{display:block;height:100%;background:var(--pesto)}
+.meter span{display:block;height:100%;background:var(--vinho)}
 .meter.full span{background:var(--danger)}
 .mtxt{display:flex;justify-content:space-between;font-size:13px;font-variant-numeric:tabular-nums}
 .mtxt b{font-size:15px}
@@ -61,7 +61,7 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
 .toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;font-weight:600;cursor:pointer}
 .toggle input{width:42px;height:24px;appearance:none;background:var(--line);border-radius:999px;position:relative;cursor:pointer;flex:none;transition:background .15s}
 .toggle input::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s}
-.toggle input:checked{background:var(--pesto)}
+.toggle input:checked{background:var(--vinho)}
 .toggle input:checked::after{transform:translateX(18px)}
 .toggle small{display:block;font-weight:400;color:var(--muted);font-size:12px}
 .demand{background:var(--paper);border-radius:var(--r-sm);padding:10px 12px;font-size:13px}
@@ -78,12 +78,12 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
 .filters{display:flex;gap:6px;flex-wrap:wrap}
 .chip{all:unset;cursor:pointer;border:1.5px solid var(--line);background:var(--bg);border-radius:999px;padding:7px 13px;font-weight:600;font-size:13px}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.chip:focus-visible{outline:2px solid var(--pesto)}
+.chip:focus-visible{outline:2px solid var(--vinho)}
 .ped .ph{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .ped .num{font-family:var(--display);font-size:24px;line-height:1}
 .ped .who{font-weight:700}
 .ped .meta{font-size:13px;color:var(--muted)}
-.ped a{color:var(--pesto);font-weight:600}
+.ped a{color:var(--vinho);font-weight:600}
 .ped ul{margin:0;padding-left:18px;font-size:14px}
 .ped ul small{color:var(--muted)}
 .ped .tot{display:flex;justify-content:space-between;font-weight:700;font-variant-numeric:tabular-nums;border-top:1px solid var(--line);padding-top:10px}
@@ -112,15 +112,15 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
 .ph-i img{width:100%;height:100%;object-fit:cover}
 .ph-i .ctl{position:absolute;inset:auto 0 0 0;display:flex;justify-content:space-between;background:rgba(0,0,0,.55)}
 .ph-i .ctl button{all:unset;cursor:pointer;color:#fff;font-size:13px;padding:3px 7px}
-.ph-i .first{position:absolute;top:4px;left:4px;background:var(--pesto);color:var(--on-pesto);font-size:10px;font-weight:700;border-radius:999px;padding:1px 6px}
+.ph-i .first{position:absolute;top:4px;left:4px;background:var(--vinho);color:var(--on-vinho);font-size:10px;font-weight:700;border-radius:999px;padding:1px 6px}
 .up{width:96px;height:96px;border:1.5px dashed var(--line);border-radius:var(--r-sm);display:grid;place-items:center;text-align:center;font-size:12px;color:var(--muted);cursor:pointer;padding:6px}
 .up input{display:none}
 .og{border:1px solid var(--line);border-radius:var(--r-sm);padding:10px;display:flex;flex-direction:column;gap:8px}
 .og-h{display:flex;gap:8px;align-items:center}
 .og-h .input{flex:1}
-.small-btn{all:unset;cursor:pointer;font-size:13px;font-weight:600;color:var(--pesto)}
+.small-btn{all:unset;cursor:pointer;font-size:13px;font-weight:600;color:var(--vinho)}
 .small-btn.rm{color:var(--danger)}
-.small-btn:focus-visible{outline:2px solid var(--pesto)}
+.small-btn:focus-visible{outline:2px solid var(--vinho)}
 
 /* ajustes */
 .tbl{overflow-x:auto}
@@ -358,7 +358,7 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
       <div class="ph"><div><div class="num">#${p.numero}</div><div class="who">${esc(p.nome)}</div>
         <div class="meta">${tel?`<a href="https://wa.me/${telBR}" target="_blank" rel="noopener">${esc(p.telefone)}</a>`:""}${p.tipo==="extra"?" · venda extra":""}</div></div>
         <span class="st ${p.status}">${STATUS[p.status]}</span></div>
-      <div class="meta"><b style="color:var(--ink)">${p.modo}</b>${p.modo==="Entrega"?` — ${esc(p.endereco)}`:""}</div>
+      <div class="meta"><b style="color:var(--ink)">${p.modo}</b>${p.modo==="Entrega"?` — ${esc(p.endereco)}<br>Frete: ${p.frete_combinar?"<b style=\"color:var(--danger)\">a combinar</b>":`${brl(p.taxa_entrega)}${p.km!=null?` (${String(p.km).replace(".",",")} km)`:""}`}`:""}</div>
       <ul>${p.itens.map(i=>`<li>${i.qtd}× ${esc(i.nome)}${i.opcao?` <small>(${esc(i.opcao)})</small>`:""}${i.obs?`<br><small>Obs: ${esc(i.obs)}</small>`:""}</li>`).join("")}</ul>
       ${p.obs?`<div class="meta">Observação: ${esc(p.obs)}</div>`:""}
       <div class="tot"><span>${esc(p.pagamento)}${p.troco?` · troco p/ ${esc(p.troco)}`:""} · ${p.pago?"pago":"a receber"}</span><span>${brl(p.total)}</span></div>
@@ -488,6 +488,7 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
   }
 
   // ---------- AJUSTES ----------
+  function tipoPix(k){ if(!k) return ""; if(k.startsWith("+55")) return "celular"; if(k.includes("@")) return "email"; if(/^\d{11}$/.test(k)) return "cpf"; return "aleatoria"; }
   async function renderAjustes(){
     const el = $("t-ajustes");
     const { data:conv } = await sb.from("equipe_convites").select("*").order("nome");
@@ -498,13 +499,40 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
         <b>Loja</b>
         <div class="f2">
           <div class="fl"><label for="c-wa">WhatsApp que recebe os pedidos</label><input class="input" id="c-wa" inputmode="tel" value="${esc(CFG.whatsapp)}" placeholder="5519999999999"><span class="note">Com 55 + DDD, só números.</span></div>
-          <div class="fl"><label for="c-tx">Taxa de entrega (R$)</label><input class="input" id="c-tx" type="number" step="0.01" min="0" value="${CFG.taxa_entrega}"></div>
+          <div class="fl"><label for="c-ret">Endereço da loja (retirada e cálculo do frete)</label><input class="input" id="c-ret" value="${esc(CFG.endereco_retirada)}"><span class="note" id="c-loc">${CFG.loja_lat!=null?"Localização no mapa encontrada.":"Localização no mapa ainda não encontrada; salve para buscar."}</span></div>
         </div>
         <div class="fl"><label for="c-av">Aviso no topo do cardápio</label><input class="input" id="c-av" maxlength="200" value="${esc(CFG.aviso)}"></div>
+
+        <b style="margin-top:8px">Identidade</b>
         <div class="f2">
-          <div class="fl"><label for="c-pg">Formas de pagamento</label><input class="input" id="c-pg" value="${esc(CFG.pagamentos.join(", "))}"><span class="note">Separadas por vírgula.</span></div>
-          <div class="fl"><label for="c-ret">Endereço de retirada</label><input class="input" id="c-ret" value="${esc(CFG.endereco_retirada)}"></div>
+          <div class="fl"><span class="l">Logo (fica num círculo bege no topo)</span><div class="photos" id="up-logo"></div></div>
+          <div class="fl"><span class="l">Foto de capa (atrás do topo do cardápio)</span><div class="photos" id="up-capa"></div></div>
         </div>
+
+        <b style="margin-top:8px">Pagamento</b>
+        <div class="f3">
+          <div class="fl"><label for="c-pxt">Tipo da chave Pix</label><select class="input" id="c-pxt">
+            ${[["","Sem Pix"],["cpf","CPF"],["celular","Celular"],["email","E-mail"],["aleatoria","Chave aleatória"]].map(([v,l])=>`<option value="${v}" ${tipoPix(CFG.pix_chave)===v?"selected":""}>${l}</option>`).join("")}</select></div>
+          <div class="fl"><label for="c-px">Chave Pix</label><input class="input" id="c-px" value="${esc(CFG.pix_chave)}" autocomplete="off"></div>
+          <div class="fl"><label for="c-pxn">Nome do recebedor</label><input class="input" id="c-pxn" maxlength="25" value="${esc(CFG.pix_nome)}"></div>
+        </div>
+        <span class="note">Com a chave preenchida, o cliente vê o QR Code e o Pix copia e cola com o valor do pedido. O dinheiro cai direto na conta; confira o comprovante e marque como pago.</span>
+        <div class="fl"><label for="c-pg">Formas de pagamento na entrega/retirada</label><input class="input" id="c-pg" value="${esc(CFG.pagamentos.join(", "))}"><span class="note">Separadas por vírgula.</span></div>
+
+        <b style="margin-top:8px">Frete</b>
+        <div class="fl"><label for="c-fm">Como cobrar a entrega</label><select class="input" id="c-fm">
+          <option value="distancia" ${CFG.frete_modo==="distancia"?"selected":""}>Pela distância (estimativa tipo Uber Moto)</option>
+          <option value="fixo" ${CFG.frete_modo==="fixo"?"selected":""}>Taxa fixa</option></select></div>
+        <div class="f3" id="fr-dist">
+          <div class="fl"><label for="c-fb">Valor de saída (R$)</label><input class="input" id="c-fb" type="number" step="0.5" min="0" value="${CFG.frete_base}"></div>
+          <div class="fl"><label for="c-fk">Por km (R$)</label><input class="input" id="c-fk" type="number" step="0.1" min="0" value="${CFG.frete_km}"></div>
+          <div class="fl"><label for="c-fmin">Mínimo (R$)</label><input class="input" id="c-fmin" type="number" step="0.5" min="0" value="${CFG.frete_min}"></div>
+          <div class="fl"><label for="c-fr">Entrega até (km)</label><input class="input" id="c-fr" type="number" step="0.5" min="0" value="${CFG.frete_raio_km}"></div>
+        </div>
+        <div class="f3" id="fr-fixo">
+          <div class="fl"><label for="c-tx">Taxa fixa (R$)</label><input class="input" id="c-tx" type="number" step="0.01" min="0" value="${CFG.taxa_entrega}"></div>
+        </div>
+        <span class="note" id="fr-sim"></span>
         <div class="row-act"><button class="btn btn-primary" type="submit">Salvar loja</button></div>
       </form>
 
@@ -535,14 +563,58 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
           <button class="btn btn-ghost" type="submit" style="grid-column:1/-1">Liberar acesso</button></form>
       </div>`;
 
+    // imagens da marca
+    const marca = { logo_url: CFG.logo_url, capa_url: CFG.capa_url };
+    const drawUp = (k, box) => {
+      const el2 = $(box); const url = marca[k];
+      el2.innerHTML = (url ? `<div class="ph-i" style="${k==="capa_url"?"width:160px":""}"><img src="${esc(url)}" alt=""><div class="ctl"><span></span><button type="button" data-x aria-label="Remover imagem">✕ Remover</button><span></span></div></div>` : "")
+        + `<label class="up">${url?"Trocar":"+ Enviar imagem"}<input type="file" accept="image/*"></label>`;
+      el2.querySelector("[data-x]")?.addEventListener("click", () => { marca[k] = ""; drawUp(k, box); });
+      el2.querySelector("input[type=file]").onchange = async e => {
+        const f = e.target.files[0]; if (!f) return;
+        toast("Enviando imagem…");
+        const ext = (f.name.split(".").pop()||"png").toLowerCase().replace(/[^a-z0-9]/g,"");
+        const path = `loja/${k.replace("_url","")}-${Date.now()}.${ext}`;
+        const { error } = await sb.storage.from("fotos").upload(path, f, { cacheControl:"31536000", contentType:f.type });
+        if (error) { toast("Falha ao enviar: "+U.erro(error)); return; }
+        marca[k] = sb.storage.from("fotos").getPublicUrl(path).data.publicUrl; drawUp(k, box); toast("Imagem enviada. Toque em Salvar loja.");
+      };
+    };
+    drawUp("logo_url","up-logo"); drawUp("capa_url","up-capa");
+
+    const freteUI = () => {
+      const fixo = $("c-fm").value==="fixo";
+      $("fr-dist").hidden = fixo; $("fr-fixo").hidden = !fixo;
+      const b=+$("c-fb").value||0, k=+$("c-fk").value||0, m=+$("c-fmin").value||0;
+      const t = km => brl(Math.ceil(Math.max(m, b+k*km)*2)/2);
+      $("fr-sim").textContent = fixo ? "" : `Exemplos: 2 km = ${t(2)} · 5 km = ${t(5)} · 8 km = ${t(8)}. Compare com umas cotações reais do Uber Moto e ajuste.`;
+    };
+    ["c-fm","c-fb","c-fk","c-fmin"].forEach(id => $(id).addEventListener("input", freteUI)); freteUI();
+
     $("f-cfg").onsubmit = async e => {
       e.preventDefault();
-      const row = { whatsapp:$("c-wa").value.replace(/\D/g,""), taxa_entrega:Math.max(0,parseFloat($("c-tx").value)||0), aviso:$("c-av").value.trim(),
-        pagamentos:$("c-pg").value.split(",").map(s=>s.trim()).filter(Boolean), endereco_retirada:$("c-ret").value.trim() };
-      if (!row.pagamentos.length) { toast("Coloque pelo menos uma forma de pagamento."); return; }
+      const tipo = $("c-pxt").value;
+      const row = { whatsapp:$("c-wa").value.replace(/\D/g,""), aviso:$("c-av").value.trim(),
+        pagamentos:$("c-pg").value.split(",").map(s=>s.trim()).filter(Boolean), endereco_retirada:$("c-ret").value.trim(),
+        logo_url:marca.logo_url, capa_url:marca.capa_url,
+        pix_chave: tipo ? PIX.normalizar(tipo, $("c-px").value) : "", pix_nome:$("c-pxn").value.trim()||"Cacio e Pepe",
+        frete_modo:$("c-fm").value, taxa_entrega:Math.max(0,parseFloat($("c-tx").value)||0),
+        frete_base:Math.max(0,parseFloat($("c-fb").value)||0), frete_km:Math.max(0,parseFloat($("c-fk").value)||0),
+        frete_min:Math.max(0,parseFloat($("c-fmin").value)||0), frete_raio_km:Math.max(0,parseFloat($("c-fr").value)||0) };
+      if (!row.pagamentos.length && !row.pix_chave) { toast("Coloque pelo menos uma forma de pagamento."); return; }
+      if (tipo && !row.pix_chave.replace(/\D/g,"") && tipo!=="email" && tipo!=="aleatoria") { toast("Preencha a chave Pix."); return; }
+      const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true;
+      if (row.endereco_retirada !== CFG.endereco_retirada || CFG.loja_lat == null) {
+        const c = await GEO.coords({ livre: row.endereco_retirada.replace(/\s*[–-]\s*/g, ", ") });
+        row.loja_lat = c ? c.lat : null; row.loja_lng = c ? c.lng : null;
+        if (!c) toast("Não achei o endereço da loja no mapa. Confira o texto (rua, número, cidade).");
+      }
       const { data, error } = await sb.from("config").update(row).eq("id",1).select().single();
+      btn.disabled = false;
       if (error) { toast(U.erro(error)); return; }
       CFG = data; toast("Loja salva");
+      $("c-loc").textContent = CFG.loja_lat!=null ? "Localização no mapa encontrada." : "Localização no mapa não encontrada.";
+      $("c-px").value = CFG.pix_chave;
     };
     el.querySelectorAll("[data-savej]").forEach(b => b.onclick = async () => {
       const tr = b.closest("tr"); const g = k => tr.querySelector(`[data-k="${k}"]`);

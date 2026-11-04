@@ -1,25 +1,25 @@
 /* Cacio & Pepe — tokens compartilhados entre o cardápio e o painel
-   Pesto como cor de ação, mortadela e pistache como apoio, fundo branco limpo. */
+   Bege de pão e vinho bordeaux, as cores da marca. */
 :root{
-  --bg:#FFFFFF; --paper:#F5F6F1; --ink:#1A1C18; --muted:#6A7065; --line:#E3E5DD;
-  --pesto:#1F5A3A; --pesto-2:#174A2F; --on-pesto:#FFFFFF; --hero:#1F5A3A;
-  --mortadela:#F7D3CF; --on-mortadela:#5A231C; --pistache:#E0E9C6; --on-pistache:#2F3D12;
-  --danger:#A3361F; --ok:#2D6E3F; --warn:#9A6A0B;
-  --shadow:0 10px 30px rgba(26,28,24,.12);
+  --bg:#F3EADC; --surface:#FBF6EE; --paper:#E9DCC8; --ink:#2B1A17; --muted:#76635A; --line:#DCCBB4;
+  --vinho:#6B1E2B; --vinho-2:#561722; --on-vinho:#FBF3E8; --hero:#5C1824;
+  --mortadela:#F0CBC4; --on-mortadela:#5A1F1A; --pistache:#DFE3C2; --on-pistache:#38441B;
+  --danger:#A3361F; --ok:#3F6B2A; --warn:#8F5F06;
+  --shadow:0 10px 30px rgba(60,25,20,.14);
   --display:"Young Serif", Georgia, "Times New Roman", serif;
   --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
   --r-sm:8px; --r:14px; --r-lg:22px;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --bg:#111310; --paper:#191C18; --ink:#EDEFE8; --muted:#9BA294; --line:#2A2E28;
-  --pesto:#86C597; --pesto-2:#9BD3AA; --on-pesto:#0D1C12; --hero:#173F2A;
-  --mortadela:#4A2C29; --on-mortadela:#F7D3CF; --pistache:#2C3820; --on-pistache:#DDE8C2;
-  --danger:#F0937B; --ok:#86C597; --warn:#E6C06A; --shadow:0 10px 30px rgba(0,0,0,.45); color-scheme:dark }}
+  --bg:#1A1314; --surface:#221A1B; --paper:#2C2122; --ink:#F3E8DA; --muted:#B5A396; --line:#3B2D2C;
+  --vinho:#B04A5A; --vinho-2:#C25A6B; --on-vinho:#FFF6EE; --hero:#4A121C;
+  --mortadela:#4C2A28; --on-mortadela:#F3D2CC; --pistache:#323820; --on-pistache:#DFE6C4;
+  --danger:#F0937B; --ok:#A9C98A; --warn:#E6C06A; --shadow:0 10px 30px rgba(0,0,0,.5); color-scheme:dark }}
 :root[data-theme="dark"]{
-  --bg:#111310; --paper:#191C18; --ink:#EDEFE8; --muted:#9BA294; --line:#2A2E28;
-  --pesto:#86C597; --pesto-2:#9BD3AA; --on-pesto:#0D1C12; --hero:#173F2A;
-  --mortadela:#4A2C29; --on-mortadela:#F7D3CF; --pistache:#2C3820; --on-pistache:#DDE8C2;
-  --danger:#F0937B; --ok:#86C597; --warn:#E6C06A; --shadow:0 10px 30px rgba(0,0,0,.45); color-scheme:dark }
+  --bg:#1A1314; --surface:#221A1B; --paper:#2C2122; --ink:#F3E8DA; --muted:#B5A396; --line:#3B2D2C;
+  --vinho:#B04A5A; --vinho-2:#C25A6B; --on-vinho:#FFF6EE; --hero:#4A121C;
+  --mortadela:#4C2A28; --on-mortadela:#F3D2CC; --pistache:#323820; --on-pistache:#DFE6C4;
+  --danger:#F0937B; --ok:#A9C98A; --warn:#E6C06A; --shadow:0 10px 30px rgba(0,0,0,.5); color-scheme:dark }
 
 *{box-sizing:border-box}
 html,body{margin:0}
@@ -27,23 +27,23 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15p
 img{max-width:100%;display:block}
 button,input,select,textarea{font:inherit;color:inherit}
 [hidden]{display:none!important}
-:focus-visible{outline:2px solid var(--pesto);outline-offset:2px}
+:focus-visible{outline:2px solid var(--vinho);outline-offset:2px}
 h1,h2,h3{text-wrap:balance}
 
 .btn{appearance:none;border:0;cursor:pointer;border-radius:var(--r);padding:14px 18px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:10px;text-decoration:none}
-.btn-primary{background:var(--pesto);color:var(--on-pesto)}
-.btn-primary:hover{background:var(--pesto-2)}
+.btn-primary{background:var(--vinho);color:var(--on-vinho)}
+.btn-primary:hover{background:var(--vinho-2)}
 .btn-ghost{background:transparent;border:1.5px solid var(--line)}
 .btn[disabled],.btn[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
 
-.input{width:100%;background:var(--bg);border:1.5px solid var(--line);border-radius:var(--r-sm);padding:12px 13px}
-.input:focus{outline:none;border-color:var(--pesto)}
+.input{width:100%;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-sm);padding:12px 13px}
+.input:focus{outline:none;border-color:var(--vinho)}
 textarea.input{resize:vertical;min-height:72px}
 
 .stepper{display:inline-flex;align-items:center;gap:2px;border:1.5px solid var(--line);border-radius:999px;padding:3px}
 .stepper button{all:unset;cursor:pointer;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:18px;line-height:1}
 .stepper button:hover{background:var(--paper)}
-.stepper button:focus-visible{outline:2px solid var(--pesto)}
+.stepper button:focus-visible{outline:2px solid var(--vinho)}
 .stepper output{min-width:24px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
 
 .pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600}

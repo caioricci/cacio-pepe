@@ -201,6 +201,63 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
   table.est td[data-l=""]{display:none}
   .card.tbl:has(table.est){overflow-x:visible}
 }
+/* celular: app com barra de abas embaixo */
+.bnav,.mais,.mais-scrim{display:none}
+@media (max-width:640px){
+  html{-webkit-text-size-adjust:100%}
+  body::before{display:none}
+  .top{position:static;padding-top:env(safe-area-inset-top,0px)}
+  .top-in{padding-block:12px 14px}
+  .top h1{font-size:22px}
+  .top .tabs,.top .out{display:none}
+  .login{padding-top:calc(40px + env(safe-area-inset-top,0px))}
+  main{padding-block:16px calc(100px + env(safe-area-inset-bottom,0px));gap:14px}
+  .bnav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--surface);border-top:1px solid var(--line);
+    padding:6px max(6px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-left,0px));box-shadow:0 -6px 20px rgba(60,25,20,.08)}
+  .bnav button{all:unset;position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0 4px;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;min-width:0}
+  .bnav svg{width:24px;height:24px}
+  .bnav button[aria-selected="true"],.bnav button.on,.bnav button[aria-expanded="true"]{color:var(--vinho)}
+  .bnav button[aria-selected="true"]::before,.bnav button.on::before{content:"";position:absolute;top:-6px;left:28%;right:28%;height:3px;border-radius:0 0 3px 3px;background:var(--vinho)}
+  .bnav button:focus-visible{outline:2px solid var(--vinho);border-radius:10px}
+  .bnav .badge{position:absolute;top:0;left:calc(50% + 6px);margin:0}
+  .mais-scrim{display:block;position:fixed;inset:0;z-index:38;background:rgba(20,10,10,.35)}
+  .mais{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;position:fixed;left:0;right:0;bottom:0;z-index:39;background:var(--surface);border-radius:22px 22px 0 0;
+    padding:16px max(16px,env(safe-area-inset-right,0px)) calc(86px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));box-shadow:var(--shadow)}
+  .mais[hidden],.mais-scrim[hidden]{display:none}
+  .mais button{all:unset;display:flex;align-items:center;gap:10px;padding:14px;border-radius:14px;background:var(--paper);font-weight:600;cursor:pointer}
+  .mais button[aria-selected="true"]{background:var(--vinho);color:var(--on-vinho)}
+  .mais svg{width:22px;height:22px;flex:none}
+  .toast{bottom:calc(88px + env(safe-area-inset-bottom,0px))}
+  /* campos com 16px: o iPhone não dá zoom ao tocar */
+  .input,select.input,textarea.input,input,select,textarea{font-size:16px}
+  .bar{flex-wrap:wrap;gap:10px}
+  .bar h2{font-size:26px}
+  .bar > .acts,.bar > .btn{width:100%}
+  .bar > .acts .btn,.bar > .acts label.btn{flex:1}
+  .bar > .filters,.filters{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;margin-inline:-16px;padding-inline:16px;width:calc(100% + 32px)}
+  .filters::-webkit-scrollbar{display:none}
+  .filters .chip{flex:none}
+  .mes{width:100%;justify-content:space-between}
+  .day-h{margin-top:4px}
+  .card{padding:14px}
+  .f3,.f2{grid-template-columns:1fr}
+  form[data-j] .f3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .acts .btn{padding:11px 14px}
+  .row-act{flex-wrap:wrap}
+  .card.tbl table.fin{min-width:0;display:block;width:100%}
+  table.fin thead{display:none}
+  table.fin tbody,table.fin td{display:block}
+  table.fin tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:11px 14px;border-top:1px solid var(--line)}
+  table.fin tbody tr:first-child{border-top:0}
+  table.fin td{padding:0;border:0}
+  table.fin td:nth-child(1){grid-column:1;font-size:12px;color:var(--muted)}
+  table.fin td:nth-child(2){grid-column:1;grid-row:2}
+  table.fin td:nth-child(3){grid-column:1;grid-row:3;font-size:12px;color:var(--muted)}
+  table.fin td:nth-child(4){grid-column:2;grid-row:1 / span 2;align-self:center;font-weight:700}
+  table.fin td:nth-child(5){grid-column:2;grid-row:3;text-align:right}
+  .kpi{padding:12px 14px}
+  .kpi span{font-size:12px}
+}
 /* ajustes */
 .tbl{overflow-x:auto}
 .tbl table{border-collapse:collapse;width:100%;min-width:760px;font-size:14px}
@@ -253,6 +310,21 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
     <button class="out" type="button" id="out">Sair</button>
   </div></header>
 
+
+  <nav class="bnav" aria-label="Seções">
+    <button type="button" data-tab="producao" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 13c0-4.4 3.8-7 8.5-7s8.5 2.6 8.5 7v5h-17z"/><path d="M8 9.5l1 3M12 8.5v4M16 9.5l-1 3"/></svg><span>Produção</span></button>
+    <button type="button" data-tab="pedidos" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg><span>Pedidos</span><span class="badge b-ped2" hidden></span></button>
+    <button type="button" data-tab="estoque" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5l9-4.5 9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5l9 4.5 9-4.5M12 12v9"/></svg><span>Estoque</span></button>
+    <button type="button" data-tab="compras" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4"/><path d="M8 9v6M11 9v6M14 9v6M17 9v6"/></svg><span>Compras</span></button>
+    <button type="button" id="b-mais" aria-expanded="false" aria-controls="mais"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg><span>Mais</span></button>
+  </nav>
+  <div class="mais-scrim" id="mais-scrim" hidden></div>
+  <div class="mais" id="mais" hidden>
+    <button type="button" data-tab="financeiro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19h16M6 16v-5M10 16V8M14 16v-7M18 16V5"/></svg><span>Financeiro</span></button>
+    <button type="button" data-tab="cardapio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h11a1 1 0 011 1v16a1 1 0 01-1 1H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg><span>Cardápio</span></button>
+    <button type="button" data-tab="ajustes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-1.8-.3 1.6 1.6 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.6 1.6 0 00-1-1.5 1.6 1.6 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00.3-1.8 1.6 1.6 0 00-1.5-1H3a2 2 0 110-4h.1a1.6 1.6 0 001.5-1 1.6 1.6 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 001.8.3H9a1.6 1.6 0 001-1.5V3a2 2 0 114 0v.1a1.6 1.6 0 001 1.5 1.6 1.6 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00-.3 1.8V9a1.6 1.6 0 001.5 1H21a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 1z"/></svg><span>Ajustes</span></button>
+    <button type="button" id="out2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></svg><span>Sair</span></button>
+  </div>
   <main class="wrap gutter">
     <section id="t-producao"></section>
     <section id="t-pedidos" hidden></section>
@@ -347,14 +419,21 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
   }
 
   // ---------- abas ----------
-  document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => abrirTab(b.dataset.tab));
+  document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { fecharMais(); abrirTab(b.dataset.tab); });
+  function fecharMais(){ $("mais").hidden = true; $("mais-scrim").hidden = true; $("b-mais").setAttribute("aria-expanded","false"); }
+  $("b-mais").onclick = () => { const abre = $("mais").hidden; $("mais").hidden = !abre; $("mais-scrim").hidden = !abre; $("b-mais").setAttribute("aria-expanded", String(abre)); };
+  $("mais-scrim").onclick = fecharMais;
+  $("out2").onclick = () => sair();
+  function badgePedidos(n){ document.querySelectorAll("#b-ped,.b-ped2").forEach(b => { b.textContent = n; b.hidden = !n; }); }
   function abrirTab(t){
     tab = t;
-    document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab===t)));
+    document.querySelectorAll("[data-tab]").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab===t)));
+    $("b-mais").classList.toggle("on", ["financeiro","cardapio","ajustes"].includes(t));
+    scrollTo({ top:0 });
     TABS.forEach(x => $("t-"+x).hidden = x!==t);
     try { history.replaceState(null, "", "#"+t); } catch(e) {}
-    document.querySelector(`.tabs button[data-tab="${t}"]`)?.scrollIntoView({ block:"nearest", inline:"center" });
-    if (t==="pedidos") { novos = 0; $("b-ped").hidden = true; }
+    if (matchMedia("(min-width:641px)").matches) document.querySelector(`.tabs button[data-tab="${t}"]`)?.scrollIntoView({ block:"nearest", inline:"center" });
+    if (t==="pedidos") { novos = 0; badgePedidos(0); }
     ({ producao:renderProducao, pedidos:renderPedidos, estoque:MOD.renderEstoque, compras:MOD.renderCompras, financeiro:MOD.renderFinanceiro, cardapio:renderCardapio, ajustes:renderAjustes })[t]();
   }
 
@@ -625,7 +704,7 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
   // ---------- tempo real ----------
   function tempoReal(){
     sb.channel("painel").on("postgres_changes", { event:"*", schema:"public", table:"pedidos" }, payload => {
-      if (payload.eventType==="INSERT") { toast(`Novo pedido #${payload.new.numero} — ${payload.new.nome}`); if (tab!=="pedidos") { novos++; $("b-ped").textContent=novos; $("b-ped").hidden=false; } }
+      if (payload.eventType==="INSERT") { toast(`Novo pedido #${payload.new.numero} — ${payload.new.nome}`); if (tab!=="pedidos") { novos++; badgePedidos(novos); } }
       if (tab==="pedidos") { if (!novoAberto && !pedEdit) renderPedidos(); } else if (tab==="producao") renderProducao();
     }).subscribe();
   }

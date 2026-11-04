@@ -180,10 +180,11 @@ window.Modulos = function (ctx) {
     const ins = id => INSUMOS.find(i => i.id === id);
     el.innerHTML = `
       <div class="bar"><h2>Compras</h2><div class="acts">
-        <label class="btn btn-primary" for="c-foto">Escanear nota</label>
+        <button class="btn btn-primary" type="button" id="c-scan">Escanear QR Code</button>
+        <label class="btn btn-ghost" for="c-foto">Usar foto</label>
         <input type="file" id="c-foto" accept="image/*" hidden>
         <button class="btn btn-ghost" type="button" id="c-manual">Lançar à mão</button></div></div>
-      <p class="note">Tire uma foto da nota (ou escolha uma da galeria) com o QR Code aparecendo: o sistema puxa os itens da Sefaz. Se a nota não tiver QR, a foto é lida pela IA e não fica salva.</p>
+      <p class="note">Aponte a câmera para o QR Code da nota: os itens vêm da Sefaz. Nota sem QR? Use a foto, que é lida pela IA e não fica salva.</p>
       <div class="grid">${data.map(c => {
         const tot = c.compra_itens.reduce((a, x) => a + Number(x.valor) - Number(x.desconto), 0);
         return `<details class="card">
@@ -192,6 +193,7 @@ window.Modulos = function (ctx) {
           ${c.origem !== "planilha" ? `<div class="row-act"><button class="small-btn rm" type="button" data-del-compra="${c.id}">Excluir compra</button></div>` : ""}
         </details>`;
       }).join("") || `<p class="empty">Nenhuma compra ainda.</p>`}</div>`;
+    $("c-scan").onclick = abrirScanner;
     $("c-foto").onchange = e => { const f = e.target.files[0]; e.target.value = ""; if (f) escanear(f); };
     $("c-manual").onclick = () => { rascunho = { origem: "manual", fornecedor: "", data: hoje(), chave: null, desconto: 0, itens: [{ descricao: "", insumo_id: "", embalagens: 1, conteudo: null, valor: 0 }] }; renderRascunho(); };
     el.querySelectorAll("[data-del-compra]").forEach(b => b.onclick = () => confirmar(b, "Toque de novo para excluir", async () => {
@@ -223,6 +225,10 @@ window.Modulos = function (ctx) {
       $("c-pass").textContent = "Sem QR Code legível. Lendo a foto com a IA…";
       res = await chamar({ imagem: jpeg(img, 1600) });
     }
+    await usarResultado(res);
+  }
+  async function usarResultado(res) {
+    const el = $("t-compras");
     if (res.erro) {
       el.innerHTML = `<div class="card"><b>Não deu para ler essa nota</b><p>${esc(res.erro)}</p>
         <div class="acts"><label class="btn btn-primary" for="c-foto2">Tentar outra foto</label><input type="file" id="c-foto2" accept="image/*" hidden>
@@ -244,6 +250,70 @@ window.Modulos = function (ctx) {
           embalagens: kg ? 1 : it.quantidade, conteudo: kg ? Math.round(it.quantidade * 1000) : s.conteudo, valor: it.valor };
       }) };
     renderRascunho();
+  }
+  // ---------- leitor ao vivo (aponta e lê) ----------
+  async function abrirScanner() {
+    if (!navigator.mediaDevices?.getUserMedia) { toast("Este aparelho não deixa abrir a câmera aqui. Use a foto."); $("c-foto")?.click(); return; }
+    const ov = document.createElement("div"); ov.className = "scanner"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-label", "Leitor de QR Code");
+    ov.innerHTML = `<video playsinline muted autoplay></video>
+      <div class="sc-mira"><span></span></div>
+      <div class="sc-top"><button type="button" class="sc-btn" data-x aria-label="Fechar">✕</button><button type="button" class="sc-btn" data-luz hidden aria-label="Lanterna">Lanterna</button></div>
+      <div class="sc-bot"><p data-msg>Pedindo acesso à câmera…</p><label class="sc-foto">Usar foto da galeria<input type="file" accept="image/*" hidden></label></div>`;
+    document.body.append(ov); document.body.style.overflow = "hidden";
+    let vivo = true, stream = null;
+    const msg = t => { const m = ov.querySelector("[data-msg]"); if (m) m.textContent = t; };
+    const fechar = () => { vivo = false; stream?.getTracks().forEach(t => t.stop()); ov.remove(); document.body.style.overflow = ""; };
+    ov.querySelector("[data-x]").onclick = fechar;
+    ov.querySelector(".sc-foto input").onchange = e => { const f = e.target.files[0]; fechar(); if (f) escanear(f); };
+    addEventListener("keydown", function esc1(e) { if (e.key === "Escape" && vivo) { fechar(); removeEventListener("keydown", esc1); } });
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } } });
+    } catch (e) {
+      fechar();
+      toast(e.name === "NotAllowedError" ? "Sem permissão para a câmera. No iPhone: Ajustes → Produzione (ou Safari) → Câmera." : "Não deu para abrir a câmera. Use a foto.");
+      return;
+    }
+    if (!vivo) { stream.getTracks().forEach(t => t.stop()); return; }
+    const v = ov.querySelector("video"); v.srcObject = stream; try { await v.play(); } catch (e) {}
+    msg("Aponte para o QR Code da nota");
+    const track = stream.getVideoTracks()[0];
+    try {
+      if (track.getCapabilities?.().torch) {
+        const b = ov.querySelector("[data-luz]"); b.hidden = false; let on = false;
+        b.onclick = async () => { on = !on; try { await track.applyConstraints({ advanced: [{ torch: on }] }); b.classList.toggle("on", on); } catch (e) {} };
+      }
+    } catch (e) {}
+    let det = null;
+    try { if ("BarcodeDetector" in window && (await BarcodeDetector.getSupportedFormats()).includes("qr_code")) det = new BarcodeDetector({ formats: ["qr_code"] }); } catch (e) {}
+    const c = document.createElement("canvas"); const cx = c.getContext("2d", { willReadFrequently: true });
+    let invalido = 0;
+    const ler = async () => {
+      if (!vivo) return;
+      if (v.readyState >= 2 && v.videoWidth) {
+        let txt = null;
+        if (det) { try { txt = (await det.detect(v))[0]?.rawValue || null; } catch (e) { det = null; } }
+        if (!txt && window.jsQR) {
+          const k = Math.min(1, 900 / Math.max(v.videoWidth, v.videoHeight));
+          c.width = Math.round(v.videoWidth * k); c.height = Math.round(v.videoHeight * k);
+          cx.drawImage(v, 0, 0, c.width, c.height);
+          txt = jsQR(cx.getImageData(0, 0, c.width, c.height).data, c.width, c.height, { inversionAttempts: "dontInvert" })?.data || null;
+        }
+        if (txt) {
+          if (/^https?:\/\/[^/]*\.gov\.br\//i.test(txt)) {
+            navigator.vibrate?.(60); ov.classList.add("ok"); msg("Nota encontrada!");
+            setTimeout(() => { fechar(); lerQr(txt); }, 250);
+            return;
+          }
+          if (++invalido % 8 === 1) msg("Esse QR Code não é de nota fiscal. Aponte para o QR da nota.");
+        }
+      }
+      setTimeout(ler, 160);
+    };
+    ler();
+  }
+  async function lerQr(url) {
+    $("t-compras").innerHTML = `<div class="card"><b>Lendo a nota…</b><p class="note">Buscando os itens na Sefaz.</p></div>`;
+    await usarResultado(await chamar({ qr: url }));
   }
   const tituloFornecedor = s => (s || "").toLowerCase().replace(/\b(ltda|me|eireli|s\/?a|epp)\b\.?/g, "").replace(/\s+/g, " ").trim().replace(/(^|\s)\S/g, m => m.toUpperCase());
   async function chamar(body) {

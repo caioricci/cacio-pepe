@@ -180,8 +180,8 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
 .ficha-custos b{font-size:18px;font-variant-numeric:tabular-nums}
 .ficha-custos small{font-size:12px;font-weight:700}
 @media (max-width:640px){
-  .ic{grid-template-columns:1fr 1fr;}
-  .ic > :first-child{grid-column:1/-1}
+  .ic{grid-template-columns:minmax(0,1fr) auto}
+  .ic > :nth-child(-n+3){grid-column:1/-1}
   .fr{grid-template-columns:1fr 1fr}
   .fr > :first-child{grid-column:1/-1}
 }
@@ -258,6 +258,19 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
   .kpi{padding:12px 14px}
   .kpi span{font-size:12px}
 }
+/* leitor de QR ao vivo */
+.scanner{position:fixed;inset:0;z-index:100;background:#000;color:#fff;display:flex;flex-direction:column}
+.scanner video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.sc-mira{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.sc-mira span{width:min(68vw,300px);aspect-ratio:1;max-width:100%;border-radius:22px;box-shadow:0 0 0 100vmax rgba(0,0,0,.5);border:3px solid rgba(255,255,255,.9);transition:border-color .15s}
+.scanner.ok .sc-mira span{border-color:#8BD17C}
+.sc-top{position:relative;display:flex;justify-content:space-between;padding:calc(12px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 12px max(16px,env(safe-area-inset-left,0px))}
+.sc-btn{all:unset;cursor:pointer;min-width:44px;height:44px;padding:0 12px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center;font-weight:700;font-size:15px}
+.sc-btn.on{background:#fff;color:#000}
+.sc-btn:focus-visible{outline:2px solid #fff}
+.sc-bot{position:relative;margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:16px max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.sc-bot p{margin:0;font-size:17px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.sc-foto{cursor:pointer;padding:12px 18px;border-radius:999px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);font-weight:600}
 /* ajustes */
 .tbl{overflow-x:auto}
 .tbl table{border-collapse:collapse;width:100%;min-width:760px;font-size:14px}

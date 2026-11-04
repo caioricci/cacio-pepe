@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cacio & Pepe — Encomendas</title>
+<meta name="description" content="Paninis artesanais na ciabatta da casa. Encomende para quarta ou sexta, almoço ou noite.">
+<meta name="theme-color" content="#1F5A3A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="base.css">
+<style>
+.app{max-width:640px;margin:0 auto;min-height:100vh;background:var(--bg);padding-bottom:110px}
+.gutter{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* Cabeçalho: a "pimenta" sobre o pesto */
+.hero{position:relative;background:var(--hero);color:#fff;padding-top:calc(28px + env(safe-area-inset-top,0px));padding-bottom:26px;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;opacity:.28;pointer-events:none;
+  background-image:
+    radial-gradient(circle at 20% 30%, #0b0d0a 1.2px, transparent 1.6px),
+    radial-gradient(circle at 70% 60%, #0b0d0a 0.9px, transparent 1.3px),
+    radial-gradient(circle at 40% 80%, #0b0d0a 1.6px, transparent 2px),
+    radial-gradient(circle at 85% 15%, #0b0d0a 0.8px, transparent 1.2px);
+  background-size:37px 41px,23px 29px,53px 47px,31px 19px}
+.hero-in{position:relative;display:flex;flex-direction:column;gap:14px}
+.brand{font-family:var(--display);font-weight:400;font-size:clamp(46px,13vw,72px);line-height:.88;margin:0;letter-spacing:-.015em}
+.brand span{display:block}
+.tag{margin:0;max-width:36ch;opacity:.9;font-size:15px}
+.next{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:var(--r);padding:11px 14px;font-size:14px;color:inherit}
+.next b{font-weight:700}
+.next #next-txt{flex:1;min-width:0}
+.next{flex-wrap:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:#B8F0C4;flex:none}
+.next.closed .dot{background:#F7D3CF}
+
+/* Categorias */
+.cats{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line);display:flex;gap:6px;overflow-x:auto;padding-block:10px;scrollbar-width:none}
+.cats::-webkit-scrollbar{display:none}
+.cats a{flex:none;text-decoration:none;color:var(--muted);font-weight:600;padding:7px 14px;border-radius:999px}
+.cats a.on{background:var(--ink);color:var(--bg)}
+
+/* Lista */
+.sec{padding-top:22px}
+.sec h2{font-family:var(--display);font-weight:400;font-size:28px;margin:0 0 4px}
+.prod{display:grid;grid-template-columns:minmax(0,1fr) 108px;gap:14px;padding-block:18px;border-bottom:1px solid var(--line);cursor:pointer;text-align:left;width:100%;background:none;border-left:0;border-right:0;border-top:0;color:inherit}
+.prod:last-child{border-bottom:0}
+.prod h3{margin:0 0 4px;font-size:17px;font-weight:700}
+.prod p{margin:0;color:var(--muted);font-size:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.prod .price{margin-top:10px;font-weight:700;font-variant-numeric:tabular-nums}
+.thumb{width:108px;height:108px;border-radius:var(--r);overflow:hidden;background:var(--paper);position:relative}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb .n{position:absolute;right:6px;bottom:6px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:1px 7px}
+.noimg{width:100%;height:100%;display:grid;place-items:center;font-family:var(--display);font-size:30px;color:var(--muted)}
+.loading,.empty{color:var(--muted);padding-block:30px}
+
+/* Barra do carrinho */
+.cartbar{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));pointer-events:none}
+.cartbar .btn{pointer-events:auto;width:100%;max-width:608px;margin:0 auto;display:flex;justify-content:space-between;box-shadow:var(--shadow);font-size:16px;padding:16px 18px}
+.cartbar .count{background:rgba(255,255,255,.18);border-radius:999px;padding:1px 9px;font-size:13px}
+
+/* Folhas (produto e carrinho) */
+.scrim{position:fixed;inset:0;background:rgba(10,12,9,.5);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:640px;max-height:94vh;max-height:94dvh;border-radius:var(--r-lg) var(--r-lg) 0 0;display:flex;flex-direction:column;overflow:hidden}
+@media (min-width:700px){.scrim{align-items:center}.sheet{border-radius:var(--r-lg);max-height:90vh}}
+.sheet-head{display:flex;align-items:center;gap:10px;padding:12px max(16px,env(safe-area-inset-right,0px)) 12px max(16px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line)}
+.sheet-head h2{margin:0;font-size:16px;font-weight:700;flex:1;text-align:center}
+.icon-btn{all:unset;cursor:pointer;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:20px}
+.icon-btn:hover{background:var(--paper)}
+.icon-btn:focus-visible{outline:2px solid var(--pesto)}
+.sheet-body{overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
+.sheet-foot{border-top:1px solid var(--line);padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;gap:12px;align-items:center}
+.sheet-foot .btn{flex:1;justify-content:space-between}
+
+.gallery{position:relative;background:var(--paper)}
+.slides{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.slides::-webkit-scrollbar{display:none}
+.slides img{flex:none;width:100%;aspect-ratio:4/3;object-fit:cover;scroll-snap-align:start;max-width:100%}
+.dots{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:6px}
+.dots span{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.55)}
+.dots span.on{background:#fff}
+.pd{display:flex;flex-direction:column;gap:6px;padding-block:18px}
+.pd h3{margin:0;font-family:var(--display);font-weight:400;font-size:28px;line-height:1.1}
+.pd p{margin:0;color:var(--muted)}
+.pd .price{font-weight:700;font-size:17px;font-variant-numeric:tabular-nums}
+.group{border-top:8px solid var(--paper);padding-block:16px}
+.group-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px}
+.group-h b{font-size:16px}
+.group-h small{display:block;color:var(--muted);font-size:13px}
+.req{background:var(--ink);color:var(--bg);font-size:11px;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap}
+.req.picked{background:var(--pistache);color:var(--on-pistache)}
+.choice{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.choice:last-child{border-bottom:0}
+.choice input{width:20px;height:20px;accent-color:var(--pesto)}
+
+/* Checkout */
+.ck-sec{padding-block:18px;border-top:8px solid var(--paper);display:flex;flex-direction:column;gap:12px}
+.ck-sec:first-child{border-top:0}
+.ck-sec h3{margin:0;font-size:17px;font-weight:700}
+.ck-sec .sub{color:var(--muted);font-size:13px;margin:-8px 0 0}
+.line{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding-block:12px;border-bottom:1px solid var(--line)}
+.line:last-of-type{border-bottom:0}
+.line .nm{font-weight:700}
+.line .meta{color:var(--muted);font-size:13px}
+.line .pr{font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+.line .act{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center}
+.link{all:unset;cursor:pointer;color:var(--danger);font-weight:600;font-size:14px}
+.link:focus-visible{outline:2px solid var(--pesto)}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{all:unset;box-sizing:border-box;cursor:pointer;border:1.5px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:2px}
+.opt b{font-size:15px}
+.opt small{color:var(--muted);font-size:13px}
+.opt[aria-pressed="true"]{border-color:var(--pesto);box-shadow:inset 0 0 0 1px var(--pesto)}
+.opt:focus-visible{outline:2px solid var(--pesto);outline-offset:2px}
+.opt[disabled]{opacity:.45;cursor:not-allowed}
+.days{display:flex;flex-direction:column;gap:14px}
+.day h4{margin:0 0 8px;font-size:14px;font-weight:700}
+.day h4::first-letter{text-transform:uppercase}
+.slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.slot .cut{font-size:12px;color:var(--muted)}
+.slot .left{font-size:12px;font-weight:700;color:var(--ok)}
+.slot .left.low{color:var(--warn)}
+.slot .left.none{color:var(--danger)}
+.chosen{background:var(--pistache);color:var(--on-pistache);border-radius:var(--r);padding:14px 16px;font-size:15px}
+.chosen b{font-weight:800}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:13px;font-weight:600}
+.field .hint{font-size:12px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{all:unset;cursor:pointer;border:1.5px solid var(--line);border-radius:999px;padding:9px 16px;font-weight:600}
+.chip[aria-pressed="true"]{border-color:var(--pesto);background:var(--pesto);color:var(--on-pesto)}
+.chip:focus-visible{outline:2px solid var(--pesto);outline-offset:2px}
+.totals{display:flex;flex-direction:column;gap:6px;font-variant-numeric:tabular-nums}
+.totals div{display:flex;justify-content:space-between}
+.totals .t{font-weight:800;font-size:18px;padding-top:6px;border-top:1px solid var(--line)}
+.err{background:var(--mortadela);color:var(--on-mortadela);border-radius:var(--r-sm);padding:11px 13px;font-size:14px;font-weight:600}
+.err:empty{display:none}
+
+/* Confirmação */
+.done{padding-block:34px;display:flex;flex-direction:column;gap:14px;align-items:flex-start}
+.done .num{font-family:var(--display);font-size:56px;line-height:1;color:var(--pesto)}
+.done h3{margin:0;font-family:var(--display);font-weight:400;font-size:28px}
+.done p{margin:0;color:var(--muted);max-width:44ch}
+.done .btn{width:100%}
+
+.foot{padding-block:28px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="hero">
+    <div class="hero-in gutter">
+      <h1 class="brand"><span>Cacio</span><span>&amp; Pepe</span></h1>
+      <p class="tag" id="aviso">Paninis artesanais na ciabatta da casa.</p>
+      <div class="next" id="next"><span class="dot"></span><span id="next-txt">Carregando a agenda…</span></div>
+    </div>
+  </header>
+
+  <nav class="cats gutter" id="cats" aria-label="Categorias"></nav>
+  <main class="gutter" id="menu"><p class="loading">Carregando cardápio…</p></main>
+  <footer class="foot gutter" id="foot"></footer>
+</div>
+
+<div class="cartbar" id="cartbar" hidden>
+  <button class="btn btn-primary" id="open-cart" type="button">
+    <span><span class="count" id="cart-count">0</span>&nbsp; Ver carrinho</span><span id="cart-total">R$ 0,00</span>
+  </button>
+</div>
+
+<!-- Folha do produto -->
+<div class="scrim" id="pd-scrim" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pd-title">
+    <div class="sheet-head"><button class="icon-btn" type="button" data-close aria-label="Fechar">✕</button><h2>Detalhe do produto</h2><span style="width:38px"></span></div>
+    <div class="sheet-body" id="pd-body"></div>
+    <div class="sheet-foot">
+      <div class="stepper"><button type="button" id="pd-minus" aria-label="Diminuir">−</button><output id="pd-qty">1</output><button type="button" id="pd-plus" aria-label="Aumentar">+</button></div>
+      <button class="btn btn-primary" type="button" id="pd-add"><span>Adicionar</span><span id="pd-price"></span></button>
+    </div>
+  </div>
+</div>
+
+<!-- Folha do carrinho / checkout -->
+<div class="scrim" id="ck-scrim" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="ck-title">
+    <div class="sheet-head"><button class="icon-btn" type="button" data-close aria-label="Voltar">←</button><h2 id="ck-title">Meu pedido</h2><span style="width:38px"></span></div>
+    <div class="sheet-body" id="ck-body"></div>
+    <div class="sheet-foot" id="ck-foot">
+      <button class="btn btn-primary" type="button" id="ck-send"><span>Enviar pedido pelo WhatsApp</span><span id="ck-total"></span></button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script src="supabase.js"></script>
+<script src="config.js"></script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const { brl, esc } = U;
+  let CFG = null, PRODUTOS = [], SLOTS = [];
+  const CART_KEY = "cacio_carrinho_v1";
+  let cart = [];
+  try { cart = JSON.parse(localStorage.getItem(CART_KEY) || "[]"); } catch(e) { cart = []; }
+  const saveCart = () => { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch(e){} };
+  const ck = { modo:null, slot:null, pag:null };
+
+  function toast(msg){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true,2600); }
+
+  // ---------- dados ----------
+  async function carregar(){
+    const [c, p] = await Promise.all([
+      sb.from("config").select("*").eq("id",1).single(),
+      sb.from("produtos").select("*").eq("ativo",true).order("ordem").order("nome"),
+    ]);
+    if (c.error || p.error) { $("menu").innerHTML = `<p class="empty">Não conseguimos carregar o cardápio agora. Atualize a página em instantes.</p>`; return; }
+    CFG = c.data; PRODUTOS = p.data;
+    if (CFG.aviso) $("aviso").textContent = CFG.aviso;
+    $("foot").innerHTML = `Retirada: ${esc(CFG.endereco_retirada)}<br>Pagamento na entrega: ${esc(CFG.pagamentos.join(", "))}`;
+    // remove do carrinho itens que saíram do cardápio
+    cart = cart.filter(l => PRODUTOS.some(p => p.id === l.produto_id)); saveCart();
+    renderMenu(); renderCartBar();
+    await atualizarAgenda();
+  }
+  async function atualizarAgenda(){
+    const { data, error } = await sb.rpc("disponibilidade", { p_dias: 14 });
+    if (error) { $("next-txt").textContent = "Não foi possível carregar a agenda."; return; }
+    SLOTS = data || [];
+    const nx = SLOTS.find(s => s.livres > 0);
+    const box = $("next");
+    if (CFG?.vendas_pausadas || !nx) {
+      box.classList.add("closed");
+      $("next-txt").innerHTML = CFG?.vendas_pausadas ? "<b>Encomendas pausadas</b> no momento." : "<b>Agenda lotada.</b> Novas datas abrem em breve.";
+    } else {
+      box.classList.remove("closed");
+      $("next-txt").innerHTML = nx.modo === "extra"
+        ? `<b>Últimas unidades ${U.quando(nx.data)}</b> · ${esc(nx.turno.toLowerCase())}`
+        : `Próxima entrega: <b>${U.DIAS[U.parseData(nx.data).dow]} ${U.ddmm(nx.data)}, ${esc(nx.turno.toLowerCase())}</b> · pedidos até ${U.quando(nx.corte)}, ${U.hora(nx.corte)}`;
+    }
+    if (!$("ck-scrim").hidden) renderCheckout();
+  }
+
+  // ---------- cardápio ----------
+  function renderMenu(){
+    const cats = [...new Set(PRODUTOS.map(p => p.categoria))];
+    if (!PRODUTOS.length) { $("menu").innerHTML = `<p class="empty">O cardápio está sendo atualizado.</p>`; $("cats").hidden = true; return; }
+    $("cats").innerHTML = cats.map((c,i)=>`<a href="#cat-${i}" class="${i?"":"on"}">${esc(c)}</a>`).join("");
+    $("cats").hidden = cats.length < 2;
+    $("menu").innerHTML = cats.map((c,i)=>`<section class="sec" id="cat-${i}"><h2>${esc(c)}</h2>${
+      PRODUTOS.filter(p=>p.categoria===c).map(p=>`<button type="button" class="prod" data-id="${p.id}">
+        <div><h3>${esc(p.nome)}</h3><p>${esc(p.descricao)}</p><div class="price">${brl(p.preco)}</div></div>
+        <div class="thumb">${p.fotos.length?`<img src="${esc(p.fotos[0])}" alt="" loading="lazy">${p.fotos.length>1?`<span class="n">${p.fotos.length} fotos</span>`:""}`:`<div class="noimg">${esc(p.nome[0])}</div>`}</div>
+      </button>`).join("")}</section>`).join("");
+    document.querySelectorAll(".prod").forEach(b => b.onclick = () => abrirProduto(b.dataset.id));
+    document.querySelectorAll(".cats a").forEach(a => a.onclick = () => { document.querySelectorAll(".cats a").forEach(x=>x.classList.toggle("on",x===a)); });
+  }
+
+  // ---------- produto ----------
+  let pd = null;
+  function abrirProduto(id){
+    const p = PRODUTOS.find(x=>x.id===id); if(!p) return;
+    pd = { p, qty:1, esc:{}, obs:"" };
+    const fotos = p.fotos || [];
+    $("pd-body").innerHTML = `
+      ${fotos.length?`<div class="gallery"><div class="slides" id="slides">${fotos.map(f=>`<img src="${esc(f)}" alt="${esc(p.nome)}">`).join("")}</div>${fotos.length>1?`<div class="dots" id="dots">${fotos.map((_,i)=>`<span class="${i?"":"on"}"></span>`).join("")}</div>`:""}</div>`:""}
+      <div class="pd gutter"><h3 id="pd-title">${esc(p.nome)}</h3><p>${esc(p.descricao)}</p><div class="price">${brl(p.preco)}</div></div>
+      ${(p.opcoes||[]).map((g,gi)=>`<div class="group gutter" role="radiogroup" aria-labelledby="g-${gi}">
+        <div class="group-h"><div><b id="g-${gi}">${esc(g.nome)}</b><small>Escolha 1 opção</small></div>${g.obrigatorio?`<span class="req" id="req-${gi}">Obrigatório</span>`:""}</div>
+        ${(g.escolhas||[]).map((e,ei)=>`<label class="choice"><span>${esc(e)}</span><input type="radio" name="g${gi}" id="g${gi}-${ei}" value="${esc(e)}" data-g="${gi}"></label>`).join("")}
+      </div>`).join("")}
+      <div class="group gutter"><div class="field"><label for="pd-obs">Observações</label><textarea class="input" id="pd-obs" maxlength="200" placeholder="Ex: sem rúcula"></textarea></div></div>`;
+    document.querySelectorAll("#pd-body input[type=radio]").forEach(r => r.onchange = () => { pd.esc[r.dataset.g] = r.value; const q=$("req-"+r.dataset.g); if(q){q.textContent="Escolhido";q.classList.add("picked");} pdUpdate(); });
+    $("pd-obs").oninput = e => pd.obs = e.target.value;
+    const sl = $("slides");
+    if (sl && $("dots")) sl.onscroll = () => { const i=Math.round(sl.scrollLeft/sl.clientWidth); [...$("dots").children].forEach((d,k)=>d.classList.toggle("on",k===i)); };
+    pdUpdate(); abrir("pd-scrim");
+  }
+  function pdFaltando(){ return (pd.p.opcoes||[]).findIndex((g,gi)=>g.obrigatorio && !pd.esc[gi]); }
+  function pdUpdate(){
+    $("pd-qty").textContent = pd.qty;
+    $("pd-price").textContent = brl(pd.p.preco*pd.qty);
+    $("pd-add").setAttribute("aria-disabled", String(pdFaltando()>=0));
+  }
+  $("pd-minus").onclick = () => { pd.qty=Math.max(1,pd.qty-1); pdUpdate(); };
+  $("pd-plus").onclick  = () => { pd.qty=Math.min(20,pd.qty+1); pdUpdate(); };
+  $("pd-add").onclick = () => {
+    const f = pdFaltando();
+    if (f>=0) { toast(`Escolha o ${pd.p.opcoes[f].nome.toLowerCase()} para continuar.`); document.getElementById("g-"+f).scrollIntoView({behavior:"smooth",block:"center"}); return; }
+    const opcao = (pd.p.opcoes||[]).map((g,gi)=>pd.esc[gi]?`${g.nome}: ${pd.esc[gi]}`:"").filter(Boolean).join("; ");
+    const obs = pd.obs.trim();
+    const ex = cart.find(l=>l.produto_id===pd.p.id && l.opcao===opcao && l.obs===obs);
+    if (ex) ex.qtd = Math.min(20, ex.qtd+pd.qty); else cart.push({ produto_id:pd.p.id, opcao, obs, qtd:pd.qty });
+    saveCart(); renderCartBar(); fechar("pd-scrim"); toast("Adicionado ao carrinho");
+  };
+
+  // ---------- carrinho ----------
+  const prod = id => PRODUTOS.find(p=>p.id===id);
+  const subtotal = () => cart.reduce((a,l)=>a+(prod(l.produto_id)?.preco||0)*l.qtd,0);
+  const paes = () => cart.reduce((a,l)=>a+(prod(l.produto_id)?.paes_por_unidade??1)*l.qtd,0);
+  const nItens = () => cart.reduce((a,l)=>a+l.qtd,0);
+  const taxa = () => ck.modo==="Entrega" ? Number(CFG?.taxa_entrega||0) : 0;
+  function renderCartBar(){
+    const n = nItens(); $("cartbar").hidden = !n;
+    $("cart-count").textContent = n; $("cart-total").textContent = brl(subtotal());
+  }
+  $("open-cart").onclick = () => { ck.err=""; renderCheckout(); abrir("ck-scrim"); atualizarAgenda(); };
+
+  function slotInfo(s){
+    const need = paes();
+    if (s.livres <= 0) return { ok:false, txt:"Esgotado", cls:"none" };
+    if (s.livres < need) return { ok:false, txt:`Só ${s.livres} disponíve${s.livres>1?"is":"l"}`, cls:"none" };
+    if (s.livres <= 3) return { ok:true, txt:`Últimas ${s.livres}`, cls:"low" };
+    return { ok:true, txt:"Disponível", cls:"" };
+  }
+
+  function renderCheckout(){
+    if (!cart.length) {
+      $("ck-body").innerHTML = `<div class="gutter done"><h3>Seu carrinho está vazio</h3><p>Escolha um panini no cardápio para começar.</p><button class="btn btn-primary" type="button" data-close>Ver cardápio</button></div>`;
+      $("ck-foot").hidden = true;
+      $("ck-body").querySelector("[data-close]").onclick = () => fechar("ck-scrim");
+      return;
+    }
+    $("ck-foot").hidden = false;
+    if (ck.slot && !SLOTS.some(s=>s.data+"|"+s.janela_id===ck.slot && slotInfo(s).ok)) ck.slot = null;
+    const days = {};
+    SLOTS.forEach(s => (days[s.data] ||= []).push(s));
+    const sel = SLOTS.find(s=>s.data+"|"+s.janela_id===ck.slot);
+    const pags = CFG?.pagamentos || [];
+    const v = id => esc($(id)?.value ?? "");
+    const keep = { nome:v("ck-nome"), tel:v("ck-tel"), end:v("ck-end"), troco:v("ck-troco"), obs:v("ck-obs") };
+
+    $("ck-body").innerHTML = `
+      <div class="ck-sec gutter">
+        <h3>Itens</h3>
+        <div>${cart.map((l,i)=>{ const p=prod(l.produto_id); return `<div class="line">
+          <div><div class="nm">${esc(p.nome)}</div>${l.opcao?`<div class="meta">${esc(l.opcao)}</div>`:""}${l.obs?`<div class="meta">Obs: ${esc(l.obs)}</div>`:""}</div>
+          <div class="pr">${brl(p.preco*l.qtd)}</div>
+          <div class="act"><button class="link" type="button" data-rm="${i}">Remover</button>
+            <div class="stepper"><button type="button" data-dec="${i}" aria-label="Diminuir">−</button><output>${l.qtd}</output><button type="button" data-inc="${i}" aria-label="Aumentar">+</button></div></div>
+        </div>`;}).join("")}</div>
+        <button class="btn btn-ghost" type="button" data-close>Adicionar mais itens</button>
+      </div>
+
+      <div class="ck-sec gutter">
+        <h3>Como você quer receber?</h3>
+        <div class="seg">
+          <button type="button" class="opt" id="m-ent" aria-pressed="${ck.modo==="Entrega"}"><b>Entrega</b><small>${Number(CFG?.taxa_entrega)>0?`Taxa ${brl(CFG.taxa_entrega)}`:"No seu endereço"}</small></button>
+          <button type="button" class="opt" id="m-ret" aria-pressed="${ck.modo==="Retirada"}"><b>Retirada</b><small>No Guarani, Campinas</small></button>
+        </div>
+      </div>
+
+      ${ck.modo?`<div class="ck-sec gutter">
+        <h3>Para quando?</h3>
+        <p class="sub">Só aparecem as datas com encomendas abertas e pão disponível para o seu pedido (${paes()} ${paes()>1?"ciabattas":"ciabatta"}).</p>
+        ${CFG?.vendas_pausadas||!SLOTS.length?`<p class="err">Não há datas abertas agora. Volte mais tarde ou fale com a gente no WhatsApp.</p>`:
+        `<div class="days">${Object.entries(days).map(([d,ss])=>`<div class="day"><h4>${U.diaLongo(d)}</h4><div class="slots">${ss.map(s=>{const k=s.data+"|"+s.janela_id; const inf=slotInfo(s); return `
+          <button type="button" class="opt slot" data-slot="${k}" aria-pressed="${ck.slot===k}" ${inf.ok?"":"disabled"}>
+            <b>${esc(s.turno)}${s.horario?` · ${esc(s.horario)}`:""}</b>
+            <span class="cut">${s.modo==="extra"?"Pão pronto, saída hoje":`Pedidos até ${U.quando(s.corte)}, ${U.hora(s.corte)}`}</span>
+            <span class="left ${inf.cls}">${inf.txt}</span>
+          </button>`;}).join("")}</div></div>`).join("")}</div>`}
+        ${sel?`<div class="chosen">Seu pedido será ${ck.modo==="Entrega"?"entregue":"retirado"} <b>${U.diaLongo(sel.data)}</b>, no <b>${esc(sel.turno.toLowerCase())}</b>${sel.horario?` (${esc(sel.horario)})`:""}.</div>`:""}
+      </div>`:""}
+
+      ${ck.modo?`<div class="ck-sec gutter">
+        <h3>Seus dados</h3>
+        <div class="field"><label for="ck-nome">Nome e sobrenome</label><input class="input" id="ck-nome" autocomplete="name" maxlength="80" value="${keep.nome}"></div>
+        <div class="field"><label for="ck-tel">Celular com DDD</label><input class="input" id="ck-tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="(19) 90000-0000" maxlength="20" value="${keep.tel}"></div>
+        ${ck.modo==="Entrega"?`<div class="field"><label for="ck-end">Endereço de entrega</label><textarea class="input" id="ck-end" autocomplete="street-address" maxlength="300" placeholder="Rua, número, bairro, complemento e ponto de referência">${keep.end}</textarea></div>`:
+          `<div class="field"><span class="hint">Retirada em: ${esc(CFG?.endereco_retirada||"")}</span></div>`}
+      </div>
+
+      <div class="ck-sec gutter">
+        <h3>Pagamento na ${ck.modo==="Entrega"?"entrega":"retirada"}</h3>
+        <div class="chips">${pags.map(f=>`<button type="button" class="chip" data-pag="${esc(f)}" aria-pressed="${ck.pag===f}">${esc(f)}</button>`).join("")}</div>
+        ${ck.pag==="Dinheiro"?`<div class="field"><label for="ck-troco">Troco para quanto? (opcional)</label><input class="input" id="ck-troco" inputmode="decimal" maxlength="20" placeholder="Ex: 100" value="${keep.troco}"></div>`:""}
+        <div class="field"><label for="ck-obs">Observação para o pedido (opcional)</label><textarea class="input" id="ck-obs" maxlength="500">${keep.obs}</textarea></div>
+      </div>`:""}
+
+      <div class="ck-sec gutter">
+        <div class="totals">
+          <div><span>Subtotal</span><span>${brl(subtotal())}</span></div>
+          ${ck.modo==="Entrega"?`<div><span>Taxa de entrega</span><span>${taxa()>0?brl(taxa()):"Grátis"}</span></div>`:""}
+          <div class="t"><span>Total</span><span>${brl(subtotal()+taxa())}</span></div>
+        </div>
+        <div class="err" id="ck-err" role="alert">${esc(ck.err||"")}</div>
+      </div>`;
+
+    // eventos
+    $("ck-body").querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{ cart.splice(+b.dataset.rm,1); saveCart(); renderCartBar(); renderCheckout(); });
+    $("ck-body").querySelectorAll("[data-dec]").forEach(b=>b.onclick=()=>{ const l=cart[+b.dataset.dec]; l.qtd--; if(l.qtd<1) cart.splice(+b.dataset.dec,1); saveCart(); renderCartBar(); renderCheckout(); });
+    $("ck-body").querySelectorAll("[data-inc]").forEach(b=>b.onclick=()=>{ const l=cart[+b.dataset.inc]; l.qtd=Math.min(20,l.qtd+1); saveCart(); renderCartBar(); renderCheckout(); });
+    $("m-ent").onclick=()=>{ ck.modo="Entrega"; ck.err=""; renderCheckout(); };
+    $("m-ret").onclick=()=>{ ck.modo="Retirada"; ck.err=""; renderCheckout(); };
+    $("ck-body").querySelectorAll("[data-slot]").forEach(b=>b.onclick=()=>{ ck.slot=b.dataset.slot; ck.err=""; renderCheckout(); });
+    $("ck-body").querySelectorAll("[data-pag]").forEach(b=>b.onclick=()=>{ ck.pag=b.dataset.pag; ck.err=""; renderCheckout(); });
+    $("ck-body").querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>fechar("ck-scrim"));
+    $("ck-total").textContent = brl(subtotal()+taxa());
+  }
+
+  function faltando(){
+    if (!cart.length) return "Seu carrinho está vazio.";
+    if (!ck.modo) return "Escolha entrega ou retirada.";
+    if (!ck.slot) return "Escolha o dia e o horário.";
+    if (($("ck-nome")?.value||"").trim().length<2) return "Preencha seu nome.";
+    if (($("ck-tel")?.value||"").replace(/\D/g,"").length<10) return "Preencha seu celular com DDD.";
+    if (ck.modo==="Entrega" && ($("ck-end")?.value||"").trim().length<5) return "Preencha o endereço de entrega.";
+    if (!ck.pag) return "Escolha a forma de pagamento.";
+    if (!CFG?.whatsapp) return "O WhatsApp da loja ainda não foi configurado.";
+    return "";
+  }
+
+  function mensagem(r, sel, dados){
+    const L = [];
+    L.push(`*Pedido #${r.numero} — Cacio & Pepe*`, "");
+    L.push(`*${ck.modo==="Entrega"?"Entrega":"Retirada"}:* ${U.diaLongo(sel.data)} — ${sel.turno}${sel.horario?` (${sel.horario})`:""}`);
+    if (r.tipo==="extra") L.push("_(venda extra do dia)_");
+    L.push("", "*Itens*");
+    r.itens.forEach(i => {
+      L.push(`${i.qtd}x ${i.nome} — ${brl(i.preco*i.qtd)}`);
+      if (i.opcao) L.push(`   ${i.opcao}`);
+      if (i.obs) L.push(`   Obs: ${i.obs}`);
+    });
+    L.push("");
+    if (Number(r.taxa_entrega)>0) { L.push(`Subtotal: ${brl(r.subtotal)}`); L.push(`Entrega: ${brl(r.taxa_entrega)}`); }
+    L.push(`*Total: ${brl(r.total)}*`, "");
+    L.push(`*Nome:* ${dados.nome}`);
+    L.push(`*Celular:* ${dados.tel}`);
+    if (ck.modo==="Entrega") L.push(`*Endereço:* ${dados.end}`);
+    L.push(`*Pagamento:* ${ck.pag}${ck.pag==="Dinheiro"&&dados.troco?` (troco para R$ ${dados.troco})`:""}`);
+    if (dados.obs) L.push(`*Observação:* ${dados.obs}`);
+    return L.join("\n");
+  }
+
+  let enviando = false;
+  $("ck-send").onclick = async () => {
+    if (enviando) return;
+    const f = faltando();
+    if (f) { ck.err = f; $("ck-err").textContent = f; $("ck-err").scrollIntoView({behavior:"smooth",block:"center"}); return; }
+    const sel = SLOTS.find(s=>s.data+"|"+s.janela_id===ck.slot);
+    const dados = { nome:$("ck-nome").value.trim(), tel:$("ck-tel").value.trim(), end:$("ck-end")?.value.trim()||"", troco:$("ck-troco")?.value.trim()||"", obs:$("ck-obs").value.trim() };
+    enviando = true; $("ck-send").setAttribute("aria-disabled","true"); $("ck-send").firstElementChild.textContent = "Reservando seu pedido…";
+    const { data:r, error } = await sb.rpc("criar_pedido", {
+      p_data: sel.data, p_janela: sel.janela_id,
+      p_itens: cart.map(l=>({ produto_id:l.produto_id, opcao:l.opcao, obs:l.obs, qtd:l.qtd })),
+      p_modo: ck.modo, p_nome: dados.nome, p_telefone: dados.tel, p_endereco: dados.end,
+      p_pagamento: ck.pag, p_troco: dados.troco, p_obs: dados.obs,
+    });
+    enviando = false; $("ck-send").removeAttribute("aria-disabled"); $("ck-send").firstElementChild.textContent = "Enviar pedido pelo WhatsApp";
+    if (error) { ck.err = U.erro(error); await atualizarAgenda(); renderCheckout(); $("ck-err").scrollIntoView({behavior:"smooth",block:"center"}); return; }
+
+    const msg = mensagem(r, sel, dados);
+    const link = `https://wa.me/${CFG.whatsapp.replace(/\D/g,"")}?text=${encodeURIComponent(msg)}`;
+    cart = []; saveCart(); renderCartBar(); ck.slot = null; ck.err = "";
+    $("ck-foot").hidden = true;
+    $("ck-title").textContent = "Pedido reservado";
+    $("ck-body").innerHTML = `<div class="gutter done">
+      <div class="num">#${r.numero}</div>
+      <h3>Falta só mandar no WhatsApp</h3>
+      <p>Seu pedido para <b>${U.diaLongo(sel.data)}, ${esc(sel.turno.toLowerCase())}</b> está reservado. Envie a mensagem no WhatsApp para a gente confirmar. Se ela não abriu sozinha, toque no botão.</p>
+      <a class="btn btn-primary" href="${esc(link)}" target="_blank" rel="noopener">Abrir WhatsApp com o pedido</a>
+      <button class="btn btn-ghost" type="button" data-close>Voltar ao cardápio</button>
+    </div>`;
+    $("ck-body").querySelector("[data-close]").onclick = () => { fechar("ck-scrim"); $("ck-title").textContent = "Meu pedido"; };
+    atualizarAgenda();
+    window.location.href = link;
+  };
+
+  // ---------- folhas ----------
+  let ultimoFoco = null;
+  function abrir(id){ ultimoFoco=document.activeElement; $(id).hidden=false; document.body.style.overflow="hidden"; $(id).querySelector("[data-close]")?.focus(); }
+  function fechar(id){ $(id).hidden=true; if($("pd-scrim").hidden && $("ck-scrim").hidden) document.body.style.overflow=""; ultimoFoco?.focus?.(); if(id==="ck-scrim") $("ck-title").textContent="Meu pedido"; }
+  ["pd-scrim","ck-scrim"].forEach(id=>{
+    $(id).addEventListener("click", e => { if (e.target.id===id || e.target.closest(".sheet-head [data-close]")) fechar(id); });
+  });
+  document.addEventListener("keydown", e => { if(e.key==="Escape"){ if(!$("pd-scrim").hidden) fechar("pd-scrim"); else if(!$("ck-scrim").hidden) fechar("ck-scrim"); } });
+
+  carregar();
+  setInterval(atualizarAgenda, 60000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) atualizarAgenda(); });
+})();
+</script>
+</body>
+</html>

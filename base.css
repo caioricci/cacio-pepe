@@ -1,0 +1,55 @@
+/* Cacio & Pepe — tokens compartilhados entre o cardápio e o painel
+   Pesto como cor de ação, mortadela e pistache como apoio, fundo branco limpo. */
+:root{
+  --bg:#FFFFFF; --paper:#F5F6F1; --ink:#1A1C18; --muted:#6A7065; --line:#E3E5DD;
+  --pesto:#1F5A3A; --pesto-2:#174A2F; --on-pesto:#FFFFFF; --hero:#1F5A3A;
+  --mortadela:#F7D3CF; --on-mortadela:#5A231C; --pistache:#E0E9C6; --on-pistache:#2F3D12;
+  --danger:#A3361F; --ok:#2D6E3F; --warn:#9A6A0B;
+  --shadow:0 10px 30px rgba(26,28,24,.12);
+  --display:"Young Serif", Georgia, "Times New Roman", serif;
+  --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r-sm:8px; --r:14px; --r-lg:22px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#111310; --paper:#191C18; --ink:#EDEFE8; --muted:#9BA294; --line:#2A2E28;
+  --pesto:#86C597; --pesto-2:#9BD3AA; --on-pesto:#0D1C12; --hero:#173F2A;
+  --mortadela:#4A2C29; --on-mortadela:#F7D3CF; --pistache:#2C3820; --on-pistache:#DDE8C2;
+  --danger:#F0937B; --ok:#86C597; --warn:#E6C06A; --shadow:0 10px 30px rgba(0,0,0,.45); color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#111310; --paper:#191C18; --ink:#EDEFE8; --muted:#9BA294; --line:#2A2E28;
+  --pesto:#86C597; --pesto-2:#9BD3AA; --on-pesto:#0D1C12; --hero:#173F2A;
+  --mortadela:#4A2C29; --on-mortadela:#F7D3CF; --pistache:#2C3820; --on-pistache:#DDE8C2;
+  --danger:#F0937B; --ok:#86C597; --warn:#E6C06A; --shadow:0 10px 30px rgba(0,0,0,.45); color-scheme:dark }
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+img{max-width:100%;display:block}
+button,input,select,textarea{font:inherit;color:inherit}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--pesto);outline-offset:2px}
+h1,h2,h3{text-wrap:balance}
+
+.btn{appearance:none;border:0;cursor:pointer;border-radius:var(--r);padding:14px 18px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:10px;text-decoration:none}
+.btn-primary{background:var(--pesto);color:var(--on-pesto)}
+.btn-primary:hover{background:var(--pesto-2)}
+.btn-ghost{background:transparent;border:1.5px solid var(--line)}
+.btn[disabled],.btn[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+
+.input{width:100%;background:var(--bg);border:1.5px solid var(--line);border-radius:var(--r-sm);padding:12px 13px}
+.input:focus{outline:none;border-color:var(--pesto)}
+textarea.input{resize:vertical;min-height:72px}
+
+.stepper{display:inline-flex;align-items:center;gap:2px;border:1.5px solid var(--line);border-radius:999px;padding:3px}
+.stepper button{all:unset;cursor:pointer;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:18px;line-height:1}
+.stepper button:hover{background:var(--paper)}
+.stepper button:focus-visible{outline:2px solid var(--pesto)}
+.stepper output{min-width:24px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600}
+.pill.ok{background:var(--pistache);color:var(--on-pistache)}
+.pill.extra{background:var(--mortadela);color:var(--on-mortadela)}
+.pill.off{background:var(--paper);color:var(--muted)}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:999px;font-weight:600;font-size:14px;z-index:90;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}

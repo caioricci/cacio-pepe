@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Produzione — Cacio & Pepe</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="base.css">
+<style>
+body{background:var(--paper)}
+.gutter{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1080px;margin:0 auto}
+
+/* login */
+.login{min-height:100vh;display:grid;place-items:center;padding-block:40px}
+.login form{background:var(--bg);border:1px solid var(--line);border-radius:var(--r-lg);padding:28px;width:100%;max-width:380px;display:flex;flex-direction:column;gap:14px}
+.login h1{font-family:var(--display);font-weight:400;font-size:34px;margin:0;line-height:1}
+.login p{margin:0;color:var(--muted);font-size:14px}
+.swap{all:unset;cursor:pointer;color:var(--pesto);font-weight:600;font-size:14px}
+
+/* topo */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--hero);color:#fff}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:21;background:var(--hero)}
+.top-in{display:flex;align-items:center;gap:16px;padding-block:10px;flex-wrap:wrap}
+.top h1{font-family:var(--display);font-weight:400;font-size:22px;margin:0;flex:none}
+.tabs{display:flex;gap:4px;overflow-x:auto;flex:1;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{all:unset;cursor:pointer;padding:8px 14px;border-radius:999px;font-weight:600;white-space:nowrap;opacity:.8}
+.tabs button[aria-selected="true"]{background:rgba(255,255,255,.18);opacity:1}
+.tabs button:focus-visible{outline:2px solid currentColor}
+.badge{background:var(--mortadela);color:var(--on-mortadela);border-radius:999px;font-size:11px;padding:1px 7px;margin-left:4px}
+.out{all:unset;cursor:pointer;font-size:13px;opacity:.85}
+
+main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.bar h2{font-family:var(--display);font-weight:400;font-size:28px;margin:0}
+.note{color:var(--muted);font-size:13px;margin:0}
+
+.card{background:var(--bg);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:14px}
+.day-h{font-weight:800;margin:8px 0 -4px}
+.day-h::first-letter{text-transform:uppercase}
+
+.jh{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.jh>div{min-width:0}
+.jh .pill{white-space:nowrap;flex:none}
+.jh b{font-size:17px}
+.jh small{display:block;color:var(--muted);font-size:13px}
+.meter{height:10px;border-radius:999px;background:var(--paper);overflow:hidden}
+.meter span{display:block;height:100%;background:var(--pesto)}
+.meter.full span{background:var(--danger)}
+.mtxt{display:flex;justify-content:space-between;font-size:13px;font-variant-numeric:tabular-nums}
+.mtxt b{font-size:15px}
+.f3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.f2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.fl{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fl label,.fl span.l{font-size:12px;font-weight:600;color:var(--muted)}
+.fl .input{padding:9px 10px}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;font-weight:600;cursor:pointer}
+.toggle input{width:42px;height:24px;appearance:none;background:var(--line);border-radius:999px;position:relative;cursor:pointer;flex:none;transition:background .15s}
+.toggle input::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s}
+.toggle input:checked{background:var(--pesto)}
+.toggle input:checked::after{transform:translateX(18px)}
+.toggle small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.demand{background:var(--paper);border-radius:var(--r-sm);padding:10px 12px;font-size:13px}
+.demand b{font-variant-numeric:tabular-nums}
+.demand ul{margin:4px 0 0;padding-left:18px}
+.row-act{display:flex;gap:8px;justify-content:flex-end;align-items:center}
+.row-act .btn{padding:10px 16px}
+.saved{font-size:13px;color:var(--ok);font-weight:600}
+
+.global{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:12px}
+.global.on{background:var(--mortadela);color:var(--on-mortadela);border-color:transparent}
+
+/* pedidos */
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.chip{all:unset;cursor:pointer;border:1.5px solid var(--line);background:var(--bg);border-radius:999px;padding:7px 13px;font-weight:600;font-size:13px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip:focus-visible{outline:2px solid var(--pesto)}
+.ped .ph{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.ped .num{font-family:var(--display);font-size:24px;line-height:1}
+.ped .who{font-weight:700}
+.ped .meta{font-size:13px;color:var(--muted)}
+.ped a{color:var(--pesto);font-weight:600}
+.ped ul{margin:0;padding-left:18px;font-size:14px}
+.ped ul small{color:var(--muted)}
+.ped .tot{display:flex;justify-content:space-between;font-weight:700;font-variant-numeric:tabular-nums;border-top:1px solid var(--line);padding-top:10px}
+.st{font-size:12px;font-weight:700;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.st.aguardando{background:var(--mortadela);color:var(--on-mortadela)}
+.st.confirmado{background:var(--pistache);color:var(--on-pistache)}
+.st.entregue{background:var(--ink);color:var(--bg)}
+.st.cancelado{background:var(--paper);color:var(--muted);text-decoration:line-through}
+.acts{display:flex;flex-wrap:wrap;gap:6px}
+.acts .btn{padding:8px 12px;font-size:13px}
+.btn-danger{background:transparent;color:var(--danger);border:1.5px solid var(--line)}
+.ped.cancelado{opacity:.6}
+
+/* cardápio */
+.pe summary{cursor:pointer;display:flex;gap:12px;align-items:center;list-style:none}
+.pe summary::-webkit-details-marker{display:none}
+.pe .mini{width:52px;height:52px;border-radius:var(--r-sm);background:var(--paper);overflow:hidden;flex:none}
+.pe .mini img{width:100%;height:100%;object-fit:cover}
+.pe .sn{flex:1;min-width:0}
+.pe .sn b{display:block}
+.pe .sn small{color:var(--muted)}
+.pe[open] summary{padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.pe .body{display:flex;flex-direction:column;gap:12px}
+.photos{display:flex;flex-wrap:wrap;gap:8px}
+.ph-i{position:relative;width:96px;height:96px;border-radius:var(--r-sm);overflow:hidden;background:var(--paper)}
+.ph-i img{width:100%;height:100%;object-fit:cover}
+.ph-i .ctl{position:absolute;inset:auto 0 0 0;display:flex;justify-content:space-between;background:rgba(0,0,0,.55)}
+.ph-i .ctl button{all:unset;cursor:pointer;color:#fff;font-size:13px;padding:3px 7px}
+.ph-i .first{position:absolute;top:4px;left:4px;background:var(--pesto);color:var(--on-pesto);font-size:10px;font-weight:700;border-radius:999px;padding:1px 6px}
+.up{width:96px;height:96px;border:1.5px dashed var(--line);border-radius:var(--r-sm);display:grid;place-items:center;text-align:center;font-size:12px;color:var(--muted);cursor:pointer;padding:6px}
+.up input{display:none}
+.og{border:1px solid var(--line);border-radius:var(--r-sm);padding:10px;display:flex;flex-direction:column;gap:8px}
+.og-h{display:flex;gap:8px;align-items:center}
+.og-h .input{flex:1}
+.small-btn{all:unset;cursor:pointer;font-size:13px;font-weight:600;color:var(--pesto)}
+.small-btn.rm{color:var(--danger)}
+.small-btn:focus-visible{outline:2px solid var(--pesto)}
+
+/* ajustes */
+.tbl{overflow-x:auto}
+.tbl table{border-collapse:collapse;width:100%;min-width:760px;font-size:14px}
+.tbl th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;padding:6px}
+.tbl td{padding:6px;border-top:1px solid var(--line);vertical-align:middle}
+.tbl .input{padding:8px}
+.empty{color:var(--muted);text-align:center;padding:30px}
+.err{color:var(--danger);font-size:14px;font-weight:600}
+.err:empty{display:none}
+@media (max-width:520px){.f3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<section class="login gutter" id="v-login" hidden>
+  <form id="f-login" novalidate>
+    <h1>Produzione</h1>
+    <p id="login-sub">Painel da equipe Cacio &amp; Pepe.</p>
+    <div class="fl"><label for="l-email">E-mail</label><input class="input" id="l-email" type="email" autocomplete="email" required></div>
+    <div class="fl"><label for="l-senha">Senha</label><input class="input" id="l-senha" type="password" autocomplete="current-password" minlength="6" required></div>
+    <div class="err" id="l-err" role="alert"></div>
+    <button class="btn btn-primary" type="submit" id="l-btn">Entrar</button>
+    <button class="swap" type="button" id="l-swap">Primeiro acesso? Criar senha</button>
+  </form>
+</section>
+
+<!-- Sem acesso -->
+<section class="login gutter" id="v-noaccess" hidden>
+  <div class="card" style="max-width:420px">
+    <h2 style="font-family:var(--display);font-weight:400;margin:0">Conta sem acesso ao painel</h2>
+    <p class="note" id="na-txt"></p>
+    <button class="btn btn-ghost" type="button" id="na-out">Sair</button>
+  </div>
+</section>
+
+<!-- App -->
+<div id="v-app" hidden>
+  <header class="top"><div class="wrap gutter top-in">
+    <h1>Produzione</h1>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="producao" aria-selected="true">Produção</button>
+      <button role="tab" data-tab="pedidos" aria-selected="false">Pedidos<span class="badge" id="b-ped" hidden></span></button>
+      <button role="tab" data-tab="cardapio" aria-selected="false">Cardápio</button>
+      <button role="tab" data-tab="ajustes" aria-selected="false">Ajustes</button>
+    </nav>
+    <button class="out" type="button" id="out">Sair</button>
+  </div></header>
+
+  <main class="wrap gutter">
+    <section id="t-producao"></section>
+    <section id="t-pedidos" hidden></section>
+    <section id="t-cardapio" hidden></section>
+    <section id="t-ajustes" hidden></section>
+  </main>
+</div>
+
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script src="supabase.js"></script>
+<script src="config.js"></script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const { brl, esc } = U;
+  const ETAPAS = [["planejado","Planejado"],["massa","Massa"],["dobras","Dobras"],["fermentacao","Fermentação"],["modelagem","Modelagem"],["forno","Forno"],["pronto","Pronto"]];
+  const DIA_OPTS = U.DIAS.map((d,i)=>[i,d]);
+  let tab = "producao", CFG = null, JAN = [], PEDS = [], PRODS = [], JANELAS = [];
+  let pedFiltro = "ativos", novos = 0;
+
+  function toast(m){ const t=$("toast"); t.textContent=m; t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true,2600); }
+  function show(v){ ["v-login","v-noaccess","v-app"].forEach(x=>$(x).hidden = x!==v); }
+
+  // ---------- autenticação ----------
+  let modoCadastro = false;
+  $("l-swap").onclick = () => {
+    modoCadastro = !modoCadastro;
+    $("l-btn").textContent = modoCadastro ? "Criar senha" : "Entrar";
+    $("l-swap").textContent = modoCadastro ? "Já tenho senha" : "Primeiro acesso? Criar senha";
+    $("login-sub").textContent = modoCadastro ? "Use o e-mail que foi liberado para o painel e escolha uma senha (mínimo 6 caracteres)." : "Painel da equipe Cacio & Pepe.";
+    $("l-senha").autocomplete = modoCadastro ? "new-password" : "current-password";
+    $("l-err").textContent = "";
+  };
+  $("f-login").onsubmit = async e => {
+    e.preventDefault();
+    const email = $("l-email").value.trim(), password = $("l-senha").value;
+    if (!email || password.length < 6) { $("l-err").textContent = "Preencha e-mail e senha (mínimo 6 caracteres)."; return; }
+    $("l-btn").disabled = true; $("l-err").textContent = "";
+    const r = modoCadastro ? await sb.auth.signUp({ email, password, options:{ emailRedirectTo: location.origin + location.pathname } }) : await sb.auth.signInWithPassword({ email, password });
+    $("l-btn").disabled = false;
+    if (r.error) {
+      const m = r.error.message || "";
+      $("l-err").textContent = /invalid login/i.test(m) ? "E-mail ou senha incorretos." : /already registered/i.test(m) ? "Esse e-mail já tem senha. Use Entrar." : /confirm/i.test(m) ? "Confirme seu e-mail pelo link que enviamos e depois entre." : m;
+      return;
+    }
+    if (modoCadastro && !r.data.session) { $("l-err").textContent = "Enviamos um link de confirmação para o seu e-mail. Confirme e depois entre aqui."; return; }
+    iniciar();
+  };
+  async function sair(){ await sb.auth.signOut(); location.reload(); }
+  $("out").onclick = sair; $("na-out").onclick = sair;
+
+  async function iniciar(){
+    const { data:{ session } } = await sb.auth.getSession();
+    if (!session) { show("v-login"); return; }
+    const { data:eq } = await sb.rpc("entrar_por_convite");
+    if (!eq) { $("na-txt").textContent = `Você entrou como ${session.user.email}, mas esse e-mail ainda não foi liberado. Peça para alguém da equipe adicionar em Ajustes → Equipe e crie a conta de novo, ou fale com o Caio.`; show("v-noaccess"); return; }
+    show("v-app");
+    await carregarBase();
+    abrirTab(tab);
+    tempoReal();
+  }
+
+  // ---------- dados ----------
+  async function carregarBase(){
+    const [c, j, p] = await Promise.all([
+      sb.from("config").select("*").eq("id",1).single(),
+      sb.from("janelas").select("*").order("ordem"),
+      sb.from("produtos").select("*").order("ordem").order("nome"),
+    ]);
+    CFG = c.data; JANELAS = j.data || []; PRODS = p.data || [];
+  }
+  const hoje = () => U.hojeSP();
+  async function carregarProducao(){
+    const de = hoje(), ate = U.somaDias(de, 13);
+    const [j, p] = await Promise.all([
+      sb.rpc("painel_janelas", { p_de: de, p_ate: ate }),
+      sb.from("pedidos").select("*").gte("data", de).lte("data", ate).neq("status","cancelado"),
+    ]);
+    if (j.error) { toast(U.erro(j.error)); return; }
+    JAN = j.data || []; PEDS = p.data || [];
+  }
+
+  // ---------- abas ----------
+  document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => abrirTab(b.dataset.tab));
+  function abrirTab(t){
+    tab = t;
+    document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab===t)));
+    ["producao","pedidos","cardapio","ajustes"].forEach(x => $("t-"+x).hidden = x!==t);
+    if (t==="pedidos") { novos = 0; $("b-ped").hidden = true; }
+    ({ producao:renderProducao, pedidos:renderPedidos, cardapio:renderCardapio, ajustes:renderAjustes })[t]();
+  }
+
+  // ---------- PRODUÇÃO ----------
+  function statusJanela(j){
+    if (j.bloqueado) return `<span class="pill off">Vendas bloqueadas</span>`;
+    if (j.modo==="regular") return `<span class="pill ok">Aberta até ${U.quando(j.corte)} ${U.hora(j.corte)}</span>`;
+    if (j.modo==="extra") return `<span class="pill extra">Vendas extras abertas</span>`;
+    return `<span class="pill off">Encomendas encerradas</span>`;
+  }
+  function demanda(j){
+    const ps = PEDS.filter(p=>p.data===j.data && p.janela_id===j.janela_id);
+    if (!ps.length) return `<div class="demand">Nenhum pedido ainda.</div>`;
+    const cont = {};
+    ps.forEach(p => p.itens.forEach(i => { const k = i.nome + (i.opcao?` — ${i.opcao.replace(/^[^:]+:\s*/,"")}`:""); cont[k]=(cont[k]||0)+i.qtd; }));
+    const ag = ps.filter(p=>p.status==="aguardando").length;
+    return `<div class="demand"><b>${ps.length}</b> pedido${ps.length>1?"s":""}${ag?` (${ag} aguardando confirmação)`:""}. Montar:<ul>${Object.entries(cont).map(([k,v])=>`<li><b>${v}×</b> ${esc(k)}</li>`).join("")}</ul></div>`;
+  }
+  async function renderProducao(){
+    const el = $("t-producao");
+    el.innerHTML = `<p class="note">Carregando…</p>`;
+    await carregarProducao();
+    const dias = {}; JAN.forEach(j => (dias[j.data] ||= []).push(j));
+    el.innerHTML = `
+      <div class="bar"><h2>Produção</h2><p class="note">A capacidade de cada horário usa os pães aprovados; sem aprovados, os planejados; sem nada, a capacidade padrão.</p></div>
+      <div class="card global ${CFG.vendas_pausadas?"on":""}">
+        <label class="toggle" style="flex:1"><span>Pausar todas as encomendas<small>O cardápio continua no ar, mas ninguém consegue pedir. Pedidos feitos continuam valendo.</small></span>
+        <input type="checkbox" id="pausa" ${CFG.vendas_pausadas?"checked":""}></label>
+      </div>
+      ${Object.keys(dias).length?Object.entries(dias).map(([d,js])=>`<div class="day-h">${U.diaLongo(d)}</div><div class="grid">${js.map(cardJanela).join("")}</div>`).join(""):`<p class="empty">Nenhum horário de entrega nas próximas duas semanas. Confira os horários em Ajustes.</p>`}`;
+    $("pausa").onchange = async e => {
+      const { error } = await sb.from("config").update({ vendas_pausadas: e.target.checked }).eq("id",1);
+      if (error) { toast(U.erro(error)); e.target.checked = !e.target.checked; return; }
+      CFG.vendas_pausadas = e.target.checked; toast(e.target.checked ? "Encomendas pausadas" : "Encomendas retomadas"); renderProducao();
+    };
+    el.querySelectorAll("form[data-j]").forEach(f => f.onsubmit = salvarJanela);
+  }
+  function cardJanela(j){
+    const k = `${j.data}|${j.janela_id}`; const id = k.replace(/[^a-z0-9]/gi,"_");
+    const pct = j.capacidade ? Math.min(100, Math.round(j.reservados/j.capacidade*100)) : 100;
+    const n = (v)=> v==null?"":v;
+    return `<form class="card" data-j="${esc(k)}">
+      <div class="jh"><div><b>${esc(j.turno)}</b><small>${j.horario?esc(j.horario)+" · ":""}corte ${U.quando(j.corte)} ${U.hora(j.corte)}</small></div>${statusJanela(j)}</div>
+      <div class="meter ${j.livres<=0?"full":""}"><span style="width:${pct}%"></span></div>
+      <div class="mtxt"><span><b>${j.reservados}</b> reservados</span><span><b>${j.livres}</b> livres de ${j.capacidade}</span></div>
+      ${demanda(j)}
+      <div class="f3">
+        <div class="fl"><label for="pl_${id}">Planejados</label><input class="input" id="pl_${id}" name="pl" type="number" min="0" inputmode="numeric" value="${n(j.paes_planejados)}" placeholder="${j.capacidade_padrao}"></div>
+        <div class="fl"><label for="ap_${id}">Aprovados</label><input class="input" id="ap_${id}" name="ap" type="number" min="0" inputmode="numeric" value="${n(j.paes_aprovados)}" placeholder="—"></div>
+        <div class="fl"><label for="ds_${id}">Descartados</label><input class="input" id="ds_${id}" name="ds" type="number" min="0" inputmode="numeric" value="${j.paes_descartados||""}" placeholder="0"></div>
+      </div>
+      <div class="fl"><label for="et_${id}">Etapa da massa</label><select class="input" id="et_${id}" name="et">${ETAPAS.map(([v,l])=>`<option value="${v}" ${j.etapa===v?"selected":""}>${l}</option>`).join("")}</select></div>
+      <label class="toggle"><span>Liberar vendas extras<small>Depois do corte, vende os pães livres.</small></span><input type="checkbox" name="ex" ${j.vendas_extras?"checked":""}></label>
+      <label class="toggle"><span>Bloquear este horário<small>Para de vender sem cancelar pedidos.</small></span><input type="checkbox" name="bl" ${j.bloqueado?"checked":""}></label>
+      <div class="fl"><label for="an_${id}">Anotação</label><input class="input" id="an_${id}" name="an" maxlength="200" value="${esc(j.anotacao)}" placeholder="Ex: forno 2 em manutenção"></div>
+      <div class="row-act"><span class="saved" hidden>Salvo</span><button class="btn btn-primary" type="submit">Salvar</button></div>
+    </form>`;
+  }
+  async function salvarJanela(e){
+    e.preventDefault();
+    const f = e.target; const [data, janela_id] = f.dataset.j.split("|");
+    const num = v => v.trim()==="" ? null : Math.max(0, parseInt(v,10)||0);
+    const row = { data, janela_id, paes_planejados:num(f.pl.value), paes_aprovados:num(f.ap.value), paes_descartados:num(f.ds.value)||0,
+      etapa:f.et.value, vendas_extras:f.ex.checked, bloqueado:f.bl.checked, anotacao:f.an.value.trim(), atualizado_em:new Date().toISOString() };
+    const btn = f.querySelector("button[type=submit]"); btn.disabled = true;
+    const { error } = await sb.from("producao").upsert(row);
+    btn.disabled = false;
+    if (error) { toast(U.erro(error)); return; }
+    toast("Produção salva"); renderProducao();
+  }
+
+  // ---------- PEDIDOS ----------
+  const STATUS = { aguardando:"Aguardando", confirmado:"Confirmado", entregue:"Entregue", cancelado:"Cancelado" };
+  async function renderPedidos(){
+    const el = $("t-pedidos");
+    if (!el.innerHTML) el.innerHTML = `<p class="note">Carregando…</p>`;
+    const de = U.somaDias(hoje(), -7);
+    const { data, error } = await sb.from("pedidos").select("*").gte("data", de).order("data").order("janela_id").order("numero");
+    if (error) { el.innerHTML = `<p class="err">${esc(U.erro(error))}</p>`; return; }
+    const filtros = [["ativos","Ativos"],["aguardando","Aguardando"],["confirmado","Confirmados"],["entregue","Entregues"],["cancelado","Cancelados"],["todos","Todos"]];
+    const lista = data.filter(p => pedFiltro==="todos" ? true : pedFiltro==="ativos" ? (p.status==="aguardando"||p.status==="confirmado") : p.status===pedFiltro);
+    const jn = id => JANELAS.find(j=>j.id===id)?.turno || id;
+    const grupos = {}; lista.forEach(p => (grupos[p.data+"|"+p.janela_id] ||= []).push(p));
+    el.innerHTML = `
+      <div class="bar"><h2>Pedidos</h2><div class="filters">${filtros.map(([v,l])=>`<button class="chip" type="button" data-f="${v}" aria-pressed="${pedFiltro===v}">${l}</button>`).join("")}</div></div>
+      ${lista.length?Object.entries(grupos).map(([k,ps])=>{ const [d,j]=k.split("|"); const tot=ps.filter(p=>p.status!=="cancelado").reduce((a,p)=>a+Number(p.total),0);
+        return `<div class="day-h">${U.diaLongo(d)} · ${esc(jn(j))} <span class="note" style="text-transform:none">— ${ps.length} pedido${ps.length>1?"s":""}, ${brl(tot)}</span></div><div class="grid">${ps.map(cardPedido).join("")}</div>`;}).join("")
+        :`<p class="empty">Nenhum pedido nesse filtro.</p>`}`;
+    el.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { pedFiltro = b.dataset.f; renderPedidos(); });
+    el.querySelectorAll("[data-act]").forEach(b => b.onclick = () => acaoPedido(b));
+  }
+  function cardPedido(p){
+    const tel = (p.telefone||"").replace(/\D/g,""); const telBR = tel.length>=10 && !tel.startsWith("55") ? "55"+tel : tel;
+    return `<div class="card ped ${p.status}">
+      <div class="ph"><div><div class="num">#${p.numero}</div><div class="who">${esc(p.nome)}</div>
+        <div class="meta">${tel?`<a href="https://wa.me/${telBR}" target="_blank" rel="noopener">${esc(p.telefone)}</a>`:""}${p.tipo==="extra"?" · venda extra":""}</div></div>
+        <span class="st ${p.status}">${STATUS[p.status]}</span></div>
+      <div class="meta"><b style="color:var(--ink)">${p.modo}</b>${p.modo==="Entrega"?` — ${esc(p.endereco)}`:""}</div>
+      <ul>${p.itens.map(i=>`<li>${i.qtd}× ${esc(i.nome)}${i.opcao?` <small>(${esc(i.opcao)})</small>`:""}${i.obs?`<br><small>Obs: ${esc(i.obs)}</small>`:""}</li>`).join("")}</ul>
+      ${p.obs?`<div class="meta">Observação: ${esc(p.obs)}</div>`:""}
+      <div class="tot"><span>${esc(p.pagamento)}${p.troco?` · troco p/ ${esc(p.troco)}`:""} · ${p.pago?"pago":"a receber"}</span><span>${brl(p.total)}</span></div>
+      <div class="acts">
+        ${p.status==="aguardando"?`<button class="btn btn-primary" type="button" data-act="confirmado" data-id="${p.id}">Confirmar</button>`:""}
+        ${p.status==="confirmado"?`<button class="btn btn-primary" type="button" data-act="entregue" data-id="${p.id}">Marcar entregue</button>`:""}
+        ${p.status!=="cancelado"?`<button class="btn btn-ghost" type="button" data-act="pago" data-v="${!p.pago}" data-id="${p.id}">${p.pago?"Desmarcar pago":"Marcar pago"}</button>`:""}
+        ${p.status==="aguardando"||p.status==="confirmado"?`<button class="btn btn-danger" type="button" data-act="cancelar" data-id="${p.id}">Cancelar</button>`:""}
+        ${p.status==="cancelado"||p.status==="entregue"?`<button class="btn btn-ghost" type="button" data-act="confirmado" data-id="${p.id}">Reabrir</button>`:""}
+      </div>
+    </div>`;
+  }
+  async function acaoPedido(b){
+    const id = b.dataset.id, a = b.dataset.act;
+    if (a==="cancelar" && b.dataset.sure!=="1") { b.dataset.sure="1"; b.textContent="Toque de novo para cancelar"; setTimeout(()=>{ if(b.isConnected){ b.dataset.sure=""; b.textContent="Cancelar"; } },4000); return; }
+    const patch = a==="pago" ? { pago: b.dataset.v==="true" } : { status: a==="cancelar" ? "cancelado" : a };
+    b.disabled = true;
+    const { error } = await sb.from("pedidos").update(patch).eq("id", id);
+    if (error) { toast(U.erro(error)); b.disabled=false; return; }
+    toast(a==="cancelar"?"Pedido cancelado, pães liberados":"Pedido atualizado"); renderPedidos();
+  }
+
+  // ---------- tempo real ----------
+  function tempoReal(){
+    sb.channel("painel").on("postgres_changes", { event:"*", schema:"public", table:"pedidos" }, payload => {
+      if (payload.eventType==="INSERT") { toast(`Novo pedido #${payload.new.numero} — ${payload.new.nome}`); if (tab!=="pedidos") { novos++; $("b-ped").textContent=novos; $("b-ped").hidden=false; } }
+      if (tab==="pedidos") renderPedidos(); else if (tab==="producao") renderProducao();
+    }).subscribe();
+  }
+
+  // ---------- CARDÁPIO ----------
+  function renderCardapio(){
+    const el = $("t-cardapio");
+    el.innerHTML = `<div class="bar"><h2>Cardápio</h2><button class="btn btn-primary" type="button" id="novo-prod">Novo produto</button></div>
+      <p class="note">A primeira foto é a capa no cardápio. Produtos desativados somem do site, mas ficam salvos aqui.</p>
+      ${PRODS.length?PRODS.map(formProduto).join(""):`<p class="empty">Nenhum produto ainda.</p>`}`;
+    $("novo-prod").onclick = async () => {
+      const { data, error } = await sb.from("produtos").insert({ nome:"Novo produto", preco:0, ativo:false, ordem:PRODS.length+1 }).select().single();
+      if (error) { toast(U.erro(error)); return; }
+      PRODS.push(data); renderCardapio(); document.querySelector(`details[data-id="${data.id}"]`).open = true;
+    };
+    PRODS.forEach(p => ligarProduto(p));
+  }
+  function formProduto(p){
+    const id = p.id;
+    return `<details class="card pe" data-id="${id}">
+      <summary><div class="mini">${p.fotos[0]?`<img src="${esc(p.fotos[0])}" alt="">`:""}</div>
+        <div class="sn"><b>${esc(p.nome)}</b><small>${brl(p.preco)} · ${esc(p.categoria)} · ${p.fotos.length} foto${p.fotos.length===1?"":"s"}</small></div>
+        <span class="pill ${p.ativo?"ok":"off"}">${p.ativo?"No cardápio":"Desativado"}</span></summary>
+      <div class="body">
+        <div class="f2">
+          <div class="fl"><label for="pn_${id}">Nome</label><input class="input" id="pn_${id}" data-k="nome" value="${esc(p.nome)}" maxlength="80"></div>
+          <div class="fl"><label for="pc_${id}">Categoria</label><input class="input" id="pc_${id}" data-k="categoria" value="${esc(p.categoria)}" maxlength="40"></div>
+        </div>
+        <div class="fl"><label for="pd_${id}">Descrição</label><textarea class="input" id="pd_${id}" data-k="descricao" maxlength="400">${esc(p.descricao)}</textarea></div>
+        <div class="f3">
+          <div class="fl"><label for="pp_${id}">Preço (R$)</label><input class="input" id="pp_${id}" data-k="preco" type="number" step="0.01" min="0" value="${p.preco}"></div>
+          <div class="fl"><label for="pb_${id}">Ciabattas por unidade</label><input class="input" id="pb_${id}" data-k="paes_por_unidade" type="number" min="0" value="${p.paes_por_unidade}"></div>
+          <div class="fl"><label for="po_${id}">Ordem</label><input class="input" id="po_${id}" data-k="ordem" type="number" value="${p.ordem}"></div>
+        </div>
+        <label class="toggle"><span>Mostrar no cardápio</span><input type="checkbox" id="pa_${id}" data-k="ativo" ${p.ativo?"checked":""}></label>
+        <div class="fl"><span class="l">Fotos</span><div class="photos" id="ph_${id}"></div></div>
+        <div class="fl"><span class="l">Opções (ex: tipo de pesto)</span><div id="og_${id}" style="display:flex;flex-direction:column;gap:8px"></div>
+          <button class="small-btn" type="button" data-addg>+ Adicionar grupo de opções</button></div>
+        <div class="row-act"><button class="small-btn rm" type="button" data-del style="margin-right:auto">Excluir produto</button><button class="btn btn-primary" type="button" data-save>Salvar produto</button></div>
+      </div>
+    </details>`;
+  }
+  function ligarProduto(p){
+    const box = document.querySelector(`details[data-id="${p.id}"]`); if (!box) return;
+    const st = { fotos:[...p.fotos], opcoes: JSON.parse(JSON.stringify(p.opcoes||[])) };
+    const drawFotos = () => {
+      const ph = $("ph_"+p.id);
+      ph.innerHTML = st.fotos.map((f,i)=>`<div class="ph-i"><img src="${esc(f)}" alt="">${i===0?`<span class="first">Capa</span>`:""}
+        <div class="ctl"><button type="button" data-l="${i}" aria-label="Mover para a esquerda">←</button><button type="button" data-x="${i}" aria-label="Remover foto">✕</button><button type="button" data-r="${i}" aria-label="Mover para a direita">→</button></div></div>`).join("")
+        + `<label class="up">+ Adicionar fotos<input type="file" accept="image/*" multiple></label>`;
+      ph.querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.l; if(i>0){ [st.fotos[i-1],st.fotos[i]]=[st.fotos[i],st.fotos[i-1]]; drawFotos(); } });
+      ph.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.r; if(i<st.fotos.length-1){ [st.fotos[i+1],st.fotos[i]]=[st.fotos[i],st.fotos[i+1]]; drawFotos(); } });
+      ph.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>{ st.fotos.splice(+b.dataset.x,1); drawFotos(); });
+      ph.querySelector("input[type=file]").onchange = async e => {
+        const files = [...e.target.files]; if (!files.length) return;
+        toast(`Enviando ${files.length} foto${files.length>1?"s":""}…`);
+        for (const f of files) {
+          const ext = (f.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"");
+          const path = `${p.id}/${Date.now()}-${Math.random().toString(36).slice(2,7)}.${ext}`;
+          const { error } = await sb.storage.from("fotos").upload(path, f, { cacheControl:"31536000", contentType:f.type });
+          if (error) { toast("Falha ao enviar foto: "+U.erro(error)); continue; }
+          st.fotos.push(sb.storage.from("fotos").getPublicUrl(path).data.publicUrl);
+        }
+        drawFotos(); toast("Fotos enviadas. Toque em Salvar produto.");
+      };
+    };
+    const drawOps = () => {
+      const og = $("og_"+p.id);
+      og.innerHTML = st.opcoes.map((g,gi)=>`<div class="og">
+        <div class="og-h"><input class="input" data-gn="${gi}" value="${esc(g.nome)}" placeholder="Nome do grupo (ex: Pesto)" aria-label="Nome do grupo">
+          <label class="toggle" style="font-size:13px"><span>Obrigatório</span><input type="checkbox" data-go="${gi}" ${g.obrigatorio?"checked":""}></label></div>
+        <input class="input" data-ge="${gi}" value="${esc((g.escolhas||[]).join(", "))}" placeholder="Escolhas separadas por vírgula" aria-label="Escolhas">
+        <button class="small-btn rm" type="button" data-gx="${gi}" style="align-self:flex-start">Remover grupo</button></div>`).join("");
+      og.querySelectorAll("[data-gn]").forEach(i=>i.oninput=()=>st.opcoes[+i.dataset.gn].nome=i.value);
+      og.querySelectorAll("[data-go]").forEach(i=>i.onchange=()=>st.opcoes[+i.dataset.go].obrigatorio=i.checked);
+      og.querySelectorAll("[data-ge]").forEach(i=>i.oninput=()=>st.opcoes[+i.dataset.ge].escolhas=i.value.split(",").map(s=>s.trim()).filter(Boolean));
+      og.querySelectorAll("[data-gx]").forEach(b=>b.onclick=()=>{ st.opcoes.splice(+b.dataset.gx,1); drawOps(); });
+    };
+    box.querySelector("[data-addg]").onclick = () => { st.opcoes.push({ nome:"", obrigatorio:true, escolhas:[] }); drawOps(); };
+    box.querySelector("[data-save]").onclick = async ev => {
+      const g = k => box.querySelector(`[data-k="${k}"]`);
+      const row = { nome:g("nome").value.trim()||"Sem nome", categoria:g("categoria").value.trim()||"Paninis", descricao:g("descricao").value.trim(),
+        preco:Math.max(0, parseFloat(g("preco").value)||0), paes_por_unidade:Math.max(0, parseInt(g("paes_por_unidade").value,10)||0),
+        ordem:parseInt(g("ordem").value,10)||0, ativo:g("ativo").checked, fotos:st.fotos,
+        opcoes:st.opcoes.filter(o=>o.nome.trim() && o.escolhas.length).map(o=>({ nome:o.nome.trim(), obrigatorio:!!o.obrigatorio, escolhas:o.escolhas })) };
+      ev.target.disabled = true;
+      const { data, error } = await sb.from("produtos").update(row).eq("id", p.id).select().single();
+      ev.target.disabled = false;
+      if (error) { toast(U.erro(error)); return; }
+      Object.assign(p, data); PRODS.sort((a,b)=>a.ordem-b.ordem||a.nome.localeCompare(b.nome));
+      toast("Produto salvo"); renderCardapio();
+    };
+    box.querySelector("[data-del]").onclick = async ev => {
+      const b = ev.target;
+      if (b.dataset.sure!=="1") { b.dataset.sure="1"; b.textContent="Toque de novo para excluir"; setTimeout(()=>{ if(b.isConnected){b.dataset.sure="";b.textContent="Excluir produto";} },4000); return; }
+      const { error } = await sb.from("produtos").delete().eq("id", p.id);
+      if (error) { toast(U.erro(error)); return; }
+      PRODS = PRODS.filter(x=>x.id!==p.id); toast("Produto excluído"); renderCardapio();
+    };
+    drawFotos(); drawOps();
+  }
+
+  // ---------- AJUSTES ----------
+  async function renderAjustes(){
+    const el = $("t-ajustes");
+    const { data:conv } = await sb.from("equipe_convites").select("*").order("nome");
+    const { data:eq } = await sb.from("equipe").select("*").order("nome");
+    el.innerHTML = `
+      <div class="bar"><h2>Ajustes</h2></div>
+      <form class="card" id="f-cfg">
+        <b>Loja</b>
+        <div class="f2">
+          <div class="fl"><label for="c-wa">WhatsApp que recebe os pedidos</label><input class="input" id="c-wa" inputmode="tel" value="${esc(CFG.whatsapp)}" placeholder="5519999999999"><span class="note">Com 55 + DDD, só números.</span></div>
+          <div class="fl"><label for="c-tx">Taxa de entrega (R$)</label><input class="input" id="c-tx" type="number" step="0.01" min="0" value="${CFG.taxa_entrega}"></div>
+        </div>
+        <div class="fl"><label for="c-av">Aviso no topo do cardápio</label><input class="input" id="c-av" maxlength="200" value="${esc(CFG.aviso)}"></div>
+        <div class="f2">
+          <div class="fl"><label for="c-pg">Formas de pagamento</label><input class="input" id="c-pg" value="${esc(CFG.pagamentos.join(", "))}"><span class="note">Separadas por vírgula.</span></div>
+          <div class="fl"><label for="c-ret">Endereço de retirada</label><input class="input" id="c-ret" value="${esc(CFG.endereco_retirada)}"></div>
+        </div>
+        <div class="row-act"><button class="btn btn-primary" type="submit">Salvar loja</button></div>
+      </form>
+
+      <div class="card">
+        <b>Horários de entrega</b>
+        <p class="note">O corte é quando as encomendas daquele horário fecham. Ex: almoço de quarta, corte 1 dia antes às 22:00 = terça 22h.</p>
+        <div class="tbl"><table>
+          <thead><tr><th>Dia</th><th>Turno</th><th>Horário mostrado</th><th>Corte (dias antes)</th><th>Corte (hora)</th><th>Capacidade padrão</th><th>Ativo</th><th></th></tr></thead>
+          <tbody>${JANELAS.map(j=>`<tr data-jid="${esc(j.id)}">
+            <td><select class="input" data-k="dia_semana" aria-label="Dia">${DIA_OPTS.map(([v,l])=>`<option value="${v}" ${j.dia_semana===v?"selected":""}>${l}</option>`).join("")}</select></td>
+            <td><input class="input" data-k="turno" value="${esc(j.turno)}" aria-label="Turno"></td>
+            <td><input class="input" data-k="horario" value="${esc(j.horario)}" placeholder="11h30–14h" aria-label="Horário"></td>
+            <td><input class="input" data-k="corte_dias_antes" type="number" min="0" value="${j.corte_dias_antes}" aria-label="Dias antes"></td>
+            <td><input class="input" data-k="corte_hora" type="time" value="${j.corte_hora.slice(0,5)}" aria-label="Hora do corte"></td>
+            <td><input class="input" data-k="capacidade_padrao" type="number" min="0" value="${j.capacidade_padrao}" aria-label="Capacidade"></td>
+            <td><input type="checkbox" data-k="ativo" ${j.ativo?"checked":""} aria-label="Ativo"></td>
+            <td><button class="small-btn" type="button" data-savej>Salvar</button></td></tr>`).join("")}</tbody>
+        </table></div>
+        <button class="small-btn" type="button" id="add-j" style="align-self:flex-start">+ Adicionar horário</button>
+      </div>
+
+      <div class="card">
+        <b>Equipe</b>
+        <p class="note">Quem está aqui pode entrar no painel. Para liberar alguém, adicione o e-mail; a pessoa cria a senha em "Primeiro acesso".</p>
+        <ul style="margin:0;padding-left:18px">${(eq||[]).map(m=>`<li>${esc(m.nome)}</li>`).join("")}</ul>
+        <div class="note">E-mails liberados: ${(conv||[]).map(c=>`${esc(c.nome)} (${esc(c.email)})`).join(", ")||"nenhum"}</div>
+        <form class="f2" id="f-conv"><input class="input" id="cv-nome" placeholder="Nome" aria-label="Nome" required><input class="input" id="cv-email" type="email" placeholder="E-mail" aria-label="E-mail" required>
+          <button class="btn btn-ghost" type="submit" style="grid-column:1/-1">Liberar acesso</button></form>
+      </div>`;
+
+    $("f-cfg").onsubmit = async e => {
+      e.preventDefault();
+      const row = { whatsapp:$("c-wa").value.replace(/\D/g,""), taxa_entrega:Math.max(0,parseFloat($("c-tx").value)||0), aviso:$("c-av").value.trim(),
+        pagamentos:$("c-pg").value.split(",").map(s=>s.trim()).filter(Boolean), endereco_retirada:$("c-ret").value.trim() };
+      if (!row.pagamentos.length) { toast("Coloque pelo menos uma forma de pagamento."); return; }
+      const { data, error } = await sb.from("config").update(row).eq("id",1).select().single();
+      if (error) { toast(U.erro(error)); return; }
+      CFG = data; toast("Loja salva");
+    };
+    el.querySelectorAll("[data-savej]").forEach(b => b.onclick = async () => {
+      const tr = b.closest("tr"); const g = k => tr.querySelector(`[data-k="${k}"]`);
+      const row = { dia_semana:+g("dia_semana").value, turno:g("turno").value.trim()||"Turno", horario:g("horario").value.trim(),
+        corte_dias_antes:Math.max(0,parseInt(g("corte_dias_antes").value,10)||0), corte_hora:g("corte_hora").value||"11:00",
+        capacidade_padrao:Math.max(0,parseInt(g("capacidade_padrao").value,10)||0), ativo:g("ativo").checked };
+      const { error } = await sb.from("janelas").update(row).eq("id", tr.dataset.jid);
+      if (error) { toast(U.erro(error)); return; }
+      await carregarBase(); toast("Horário salvo");
+    });
+    $("add-j").onclick = async () => {
+      const id = "j-" + Date.now().toString(36);
+      const { error } = await sb.from("janelas").insert({ id, dia_semana:5, turno:"Novo turno", corte_dias_antes:0, corte_hora:"11:00", capacidade_padrao:10, ativo:false, ordem:JANELAS.length+1 });
+      if (error) { toast(U.erro(error)); return; }
+      await carregarBase(); renderAjustes();
+    };
+    $("f-conv").onsubmit = async e => {
+      e.preventDefault();
+      const nome = $("cv-nome").value.trim(), email = $("cv-email").value.trim().toLowerCase();
+      if (!nome || !email) return;
+      const { error } = await sb.from("equipe_convites").upsert({ email, nome });
+      if (error) { toast(U.erro(error)); return; }
+      toast("Acesso liberado"); renderAjustes();
+    };
+  }
+
+  sb.auth.onAuthStateChange((ev) => { if (ev==="SIGNED_OUT") show("v-login"); });
+  iniciar();
+})();
+</script>
+</body>
+</html>

@@ -6,6 +6,13 @@
 <title>Produzione — Cacio & Pepe</title>
 <meta name="robots" content="noindex">
 <link rel="icon" type="image/png" href="favicon.png">
+<link rel="manifest" href="painel.webmanifest">
+<meta name="theme-color" content="#5C1824">
+<link rel="apple-touch-icon" href="icon-maskable-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Produzione">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="base.css">
@@ -107,7 +114,7 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
 .it-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;min-width:0}
 .it-row small{color:var(--muted)}
 .it-row .it-q{width:72px;flex:none;padding:7px 8px}
-#f-novo{border:2px solid var(--pesto)}
+#f-novo{border:2px solid var(--vinho)}
 /* cardápio */
 .pe summary{cursor:pointer;display:flex;gap:12px;align-items:center;list-style:none}
 .pe summary::-webkit-details-marker{display:none}
@@ -133,6 +140,67 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
 .small-btn.rm{color:var(--danger)}
 .small-btn:focus-visible{outline:2px solid var(--vinho)}
 
+/* estoque, compras, financeiro */
+.acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.aviso{background:var(--mortadela);color:var(--on-mortadela);border-color:transparent}
+.aviso .note{color:inherit}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.kpi span{font-size:13px;color:var(--muted)}
+.kpi b{font-size:22px;font-variant-numeric:tabular-nums}
+.pos{color:var(--ok)} .neg{color:var(--danger)}
+.pill.bad{background:var(--mortadela);color:var(--on-mortadela)}
+.pill.warnp{background:#F3E2B8;color:#5E4206}
+:root[data-theme="dark"] .pill.warnp{background:#4A3A12;color:#F0D9A0}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .pill.warnp{background:#4A3A12;color:#F0D9A0}}
+.lista{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:14px}
+.card.tbl{padding:0;overflow-x:auto}
+table.est,table.fin{border-collapse:collapse;width:100%;min-width:640px;font-size:14px;font-variant-numeric:tabular-nums}
+table.est th,table.fin th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line)}
+table.est td,table.fin td{padding:9px 12px;border-top:1px solid var(--line);vertical-align:middle}
+table.est tbody tr:first-child td,table.fin tbody tr:first-child td{border-top:0}
+table.est .cnt{width:110px;padding:7px 8px;display:inline-block}
+.mes{display:flex;align-items:center;gap:6px;font-size:16px}
+.mes b{min-width:150px;text-align:center}
+.icon-btn{all:unset;cursor:pointer;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:22px;border:1px solid var(--line);background:var(--surface)}
+.icon-btn:focus-visible{outline:2px solid var(--vinho)}
+details.card summary{cursor:pointer;list-style:none}
+details.card summary::-webkit-details-marker{display:none}
+details.card summary small{display:block;color:var(--muted);font-size:13px}
+.itens-compra{display:flex;flex-direction:column;gap:8px}
+.ic{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.2fr) minmax(0,1fr) 100px auto;gap:8px;align-items:center;padding:8px;border-radius:var(--r-sm);border:1px solid var(--line)}
+.ic.sug{border-color:var(--warn);border-style:dashed}
+.ic-q{display:flex;align-items:center;gap:6px;min-width:0}
+.ic-q .input{min-width:0;flex:1}
+.ficha{display:flex;flex-direction:column;gap:6px}
+.fr{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) 80px auto;gap:8px;align-items:center}
+.ficha-custos{display:flex;flex-wrap:wrap;gap:10px}
+.ficha-custos div{background:var(--paper);border-radius:var(--r-sm);padding:8px 12px;display:flex;flex-direction:column;min-width:120px}
+.ficha-custos span{font-size:12px;color:var(--muted)}
+.ficha-custos b{font-size:18px;font-variant-numeric:tabular-nums}
+.ficha-custos small{font-size:12px;font-weight:700}
+@media (max-width:640px){
+  .ic{grid-template-columns:1fr 1fr;}
+  .ic > :first-child{grid-column:1/-1}
+  .fr{grid-template-columns:1fr 1fr}
+  .fr > :first-child{grid-column:1/-1}
+}
+@media (max-width:640px){
+  .top-in{gap:8px 12px}
+  .tabs{order:3;flex-basis:100%;margin-inline:-4px}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpi b{font-size:18px}
+  .card.tbl table.est{min-width:0;display:block;width:100%}
+  table.est thead{display:none}
+  table.est tbody,table.est tr,table.est td{display:block}
+  table.est tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px;padding:12px 14px;border-top:1px solid var(--line)}
+  table.est tbody tr:first-child{border-top:0}
+  table.est td{padding:0;border:0}
+  table.est td:first-child,table.est td.st-cel{grid-column:1/-1}
+  table.est td[data-l]:not([data-l=""])::before{content:attr(data-l);display:block;font-size:11px;color:var(--muted);font-weight:600}
+  table.est td[data-l=""]{display:none}
+  .card.tbl:has(table.est){overflow-x:visible}
+}
 /* ajustes */
 .tbl{overflow-x:auto}
 .tbl table{border-collapse:collapse;width:100%;min-width:760px;font-size:14px}
@@ -176,6 +244,9 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
     <nav class="tabs" role="tablist">
       <button role="tab" data-tab="producao" aria-selected="true">Produção</button>
       <button role="tab" data-tab="pedidos" aria-selected="false">Pedidos<span class="badge" id="b-ped" hidden></span></button>
+      <button role="tab" data-tab="estoque" aria-selected="false">Estoque</button>
+      <button role="tab" data-tab="compras" aria-selected="false">Compras</button>
+      <button role="tab" data-tab="financeiro" aria-selected="false">Financeiro</button>
       <button role="tab" data-tab="cardapio" aria-selected="false">Cardápio</button>
       <button role="tab" data-tab="ajustes" aria-selected="false">Ajustes</button>
     </nav>
@@ -185,6 +256,9 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
   <main class="wrap gutter">
     <section id="t-producao"></section>
     <section id="t-pedidos" hidden></section>
+    <section id="t-estoque" hidden></section>
+    <section id="t-compras" hidden></section>
+    <section id="t-financeiro" hidden></section>
     <section id="t-cardapio" hidden></section>
     <section id="t-ajustes" hidden></section>
   </main>
@@ -194,6 +268,8 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
 
 <script src="supabase.js"></script>
 <script src="config.js"></script>
+<script src="jsQR.js"></script>
+<script src="estoque.js"></script>
 <script>
 (function(){
   const $ = id => document.getElementById(id);
@@ -204,6 +280,9 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
   let pedFiltro = "ativos", novos = 0;
 
   function toast(m){ const t=$("toast"); t.textContent=m; t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true,2600); }
+  const TABS = ["producao","pedidos","estoque","compras","financeiro","cardapio","ajustes"];
+  const MOD = Modulos({ $, toast, cfg: () => CFG });
+  addEventListener("hashchange", () => { const h = location.hash.slice(1); if (TABS.includes(h) && h !== tab && !$("v-app").hidden) abrirTab(h); });
   function show(v){ ["v-login","v-noaccess","v-app"].forEach(x=>$(x).hidden = x!==v); }
 
   // ---------- autenticação ----------
@@ -241,7 +320,9 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
     if (!eq) { $("na-txt").textContent = `Você entrou como ${session.user.email}, mas esse e-mail ainda não foi liberado. Peça para alguém da equipe adicionar em Ajustes → Equipe e crie a conta de novo, ou fale com o Caio.`; show("v-noaccess"); return; }
     show("v-app");
     await carregarBase();
+    const h = location.hash.slice(1); if (TABS.includes(h)) tab = h;
     abrirTab(tab);
+    aviseNotificacoes();
     tempoReal();
   }
 
@@ -270,9 +351,11 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
   function abrirTab(t){
     tab = t;
     document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab===t)));
-    ["producao","pedidos","cardapio","ajustes"].forEach(x => $("t-"+x).hidden = x!==t);
+    TABS.forEach(x => $("t-"+x).hidden = x!==t);
+    try { history.replaceState(null, "", "#"+t); } catch(e) {}
+    document.querySelector(`.tabs button[data-tab="${t}"]`)?.scrollIntoView({ block:"nearest", inline:"center" });
     if (t==="pedidos") { novos = 0; $("b-ped").hidden = true; }
-    ({ producao:renderProducao, pedidos:renderPedidos, cardapio:renderCardapio, ajustes:renderAjustes })[t]();
+    ({ producao:renderProducao, pedidos:renderPedidos, estoque:MOD.renderEstoque, compras:MOD.renderCompras, financeiro:MOD.renderFinanceiro, cardapio:renderCardapio, ajustes:renderAjustes })[t]();
   }
 
   // ---------- PRODUÇÃO ----------
@@ -579,6 +662,7 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
         </div>
         <label class="toggle"><span>Mostrar no cardápio</span><input type="checkbox" id="pa_${id}" data-k="ativo" ${p.ativo?"checked":""}></label>
         <div class="fl"><span class="l">Fotos</span><div class="photos" id="ph_${id}"></div></div>
+        <div class="fl" data-ficha><span class="l">Ficha técnica</span><span class="note">Salve o produto e abra de novo para ver a ficha.</span></div>
         <div class="fl"><span class="l">Opções (ex: tipo de pesto)</span><div id="og_${id}" style="display:flex;flex-direction:column;gap:8px"></div>
           <button class="small-btn" type="button" data-addg>+ Adicionar grupo de opções</button></div>
         <div class="row-act"><button class="small-btn rm" type="button" data-del style="margin-right:auto">Excluir produto</button><button class="btn btn-primary" type="button" data-save>Salvar produto</button></div>
@@ -643,6 +727,7 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
       PRODS = PRODS.filter(x=>x.id!==p.id); toast("Produto excluído"); renderCardapio();
     };
     drawFotos(); drawOps();
+    box.addEventListener("toggle", () => { if (box.open && !box.dataset.fichaOk) { box.dataset.fichaOk = "1"; MOD.fichaEditor(box.querySelector("[data-ficha]"), p); } });
   }
 
   // ---------- AJUSTES ----------
@@ -665,6 +750,66 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
     </div>`;
   }
 
+  // ---------- app no celular e notificações ----------
+  const ehIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const instalado = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const temPush = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  let instalarEvt = null;
+  addEventListener("beforeinstallprompt", e => { e.preventDefault(); instalarEvt = e; if ($("celular")) $("celular").innerHTML = celularHTML(), ligarCelular(); });
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(()=>{});
+    navigator.serviceWorker.addEventListener("message", e => { if (e.data?.abrir && TABS.includes(e.data.abrir)) abrirTab(e.data.abrir); });
+  }
+  function celularHTML(){
+    const perm = "Notification" in window ? Notification.permission : "indisponivel";
+    let inst = "";
+    if (!instalado()) inst = ehIOS
+      ? `<p><b>Instalar no iPhone:</b> abra este painel no <b>Safari</b>, toque em <b>Compartilhar</b> (o quadrado com a seta) e depois em <b>Adicionar à Tela de Início</b>. Depois abra pelo ícone novo para ligar as notificações.</p>`
+      : (instalarEvt ? `<button class="btn btn-ghost" type="button" id="cel-inst">Instalar o app neste celular</button>`
+        : `<p><b>Instalar no Android:</b> no Chrome, toque nos três pontinhos e em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</p>`);
+    let noti;
+    if (!temPush()) noti = ehIOS && !instalado() ? `<p class="note">No iPhone, as notificações funcionam depois de instalar o app (iOS 16.4 ou mais novo).</p>` : `<p class="note">Este navegador não aceita notificações.</p>`;
+    else if (perm === "denied") noti = `<p class="note">As notificações foram bloqueadas neste aparelho. Libere nas configurações do navegador (Notificações → Produzione) e volte aqui.</p>`;
+    else noti = `<div class="acts"><button class="btn btn-primary" type="button" id="cel-noti">Ativar notificações de pedido</button><button class="btn btn-ghost" type="button" id="cel-teste">Enviar um teste</button></div>
+      <p class="note" id="cel-st">${perm==="granted"?"Toque em ativar se este aparelho ainda não recebe.":"Cada celular precisa ativar uma vez."}</p>`;
+    return `<b>Este celular</b>${instalado()?`<p class="note">App instalado.</p>`:""}${inst}${noti}`;
+  }
+  async function ativarNotificacoes(){
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") { toast("Sem permissão, as notificações não chegam."); return false; }
+      const reg = await navigator.serviceWorker.ready;
+      const key = Uint8Array.from(atob(CFG.vapid_publica.replace(/-/g,"+").replace(/_/g,"/").padEnd(Math.ceil(CFG.vapid_publica.length/4)*4,"=")), c => c.charCodeAt(0));
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:key });
+      const j = sub.toJSON();
+      const { error } = await sb.from("push_inscricoes").upsert({ endpoint:j.endpoint, p256dh:j.keys.p256dh, auth:j.keys.auth, aparelho:(navigator.userAgentData?.platform||navigator.platform||"").slice(0,60) });
+      if (error) { toast(U.erro(error)); return false; }
+      try { localStorage.setItem("cp_push", "1"); } catch(e) {}
+      toast("Notificações ativadas neste celular"); return true;
+    } catch (e) { toast("Não deu para ativar: " + (e.message||e)); return false; }
+  }
+  function ligarCelular(){
+    $("cel-inst")?.addEventListener("click", async () => { if (instalarEvt) { instalarEvt.prompt(); instalarEvt = null; } });
+    $("cel-noti")?.addEventListener("click", async () => { if (await ativarNotificacoes()) $("cel-st").textContent = "Pronto: os pedidos novos vão chegar aqui."; });
+    $("cel-teste")?.addEventListener("click", async () => {
+      const { data, error } = await sb.functions.invoke("push-pedido", { body:{ teste:true } });
+      if (error) { toast("Não deu para enviar o teste."); return; }
+      toast(data.enviados ? "Teste enviado. Deve chegar em segundos." : "Nenhum aparelho seu está inscrito. Toque em Ativar.");
+    });
+  }
+  // lembrete discreto na Produção até o aparelho ativar
+  function aviseNotificacoes(){
+    let ok = false; try { ok = localStorage.getItem("cp_push")==="1" || localStorage.getItem("cp_push_x")==="1"; } catch(e) {}
+    if (ok || !temPush() || Notification.permission === "denied") return;
+    const b = document.createElement("div"); b.className = "card aviso"; b.id = "aviso-push";
+    b.innerHTML = `<div class="jh"><span><b>Receba os pedidos no celular.</b> Ative as notificações neste aparelho.</span><span class="acts"><button class="btn btn-primary" type="button">Ativar</button><button class="small-btn" type="button">Agora não</button></span></div>`;
+    const [at, nao] = b.querySelectorAll("button");
+    at.onclick = async () => { if (await ativarNotificacoes()) b.remove(); };
+    nao.onclick = () => { try { localStorage.setItem("cp_push_x","1"); } catch(e) {} b.remove(); };
+    document.querySelector("main").prepend(b);
+  }
+
   async function renderAjustes(){
     const el = $("t-ajustes");
     const { data:conv } = await sb.from("equipe_convites").select("*").order("nome");
@@ -673,6 +818,7 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
     const REGRAS = fg || [];
     el.innerHTML = `
       <div class="bar"><h2>Ajustes</h2></div>
+      <div class="card" id="celular">${celularHTML()}</div>
       <form class="card" id="f-cfg">
         <b>Loja</b>
         <div class="f2">
@@ -782,6 +928,7 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
     };
     ["c-fm","c-fb","c-fk","c-fmin"].forEach(id => $(id).addEventListener("input", freteUI)); freteUI();
 
+    ligarCelular();
     el.querySelectorAll("[data-fg]").forEach(box => {
       const id = box.dataset.fg; const regra = REGRAS.find(r=>r.id===id);
       const g = k => box.querySelector(`[data-g="${k}"]`);

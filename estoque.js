@@ -181,9 +181,9 @@ window.Modulos = function (ctx) {
     el.innerHTML = `
       <div class="bar"><h2>Compras</h2><div class="acts">
         <label class="btn btn-primary" for="c-foto">Escanear nota</label>
-        <input type="file" id="c-foto" accept="image/*" capture="environment" hidden>
+        <input type="file" id="c-foto" accept="image/*" hidden>
         <button class="btn btn-ghost" type="button" id="c-manual">Lançar à mão</button></div></div>
-      <p class="note">Tire foto da nota com o QR Code aparecendo: o sistema puxa os itens da Sefaz. Se a nota não tiver QR, a foto é lida pela IA.</p>
+      <p class="note">Tire uma foto da nota (ou escolha uma da galeria) com o QR Code aparecendo: o sistema puxa os itens da Sefaz. Se a nota não tiver QR, a foto é lida pela IA e não fica salva.</p>
       <div class="grid">${data.map(c => {
         const tot = c.compra_itens.reduce((a, x) => a + Number(x.valor) - Number(x.desconto), 0);
         return `<details class="card">
@@ -225,7 +225,7 @@ window.Modulos = function (ctx) {
     }
     if (res.erro) {
       el.innerHTML = `<div class="card"><b>Não deu para ler essa nota</b><p>${esc(res.erro)}</p>
-        <div class="acts"><label class="btn btn-primary" for="c-foto2">Tentar outra foto</label><input type="file" id="c-foto2" accept="image/*" capture="environment" hidden>
+        <div class="acts"><label class="btn btn-primary" for="c-foto2">Tentar outra foto</label><input type="file" id="c-foto2" accept="image/*" hidden>
         <button class="btn btn-ghost" type="button" id="c-m2">Lançar à mão</button><button class="btn btn-ghost" type="button" id="c-volta">Voltar</button></div></div>`;
       $("c-foto2").onchange = e => { const f = e.target.files[0]; if (f) escanear(f); };
       $("c-m2").onclick = () => { rascunho = { origem: "manual", fornecedor: "", data: hoje(), chave: null, desconto: 0, itens: [{ descricao: "", insumo_id: "", embalagens: 1, conteudo: null, valor: 0 }] }; renderRascunho(); };

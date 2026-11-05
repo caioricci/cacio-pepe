@@ -47,17 +47,22 @@ Deno.serve(async (req) => {
     return json({ ok: true });
   }
 
-  // ----- criar link (só equipe) -----
+  // ----- criar link -----
+  // equipe logada: qualquer pedido. Cliente no site: só o pedido que acabou de fazer, escolhendo pagar por link.
   const jwt = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
-  const { data: u } = await db.auth.getUser(jwt);
-  if (!u?.user) return json({ erro: "Entre no painel de novo." }, 401);
-  const { data: eq } = await db.from("equipe").select("user_id").eq("user_id", u.user.id).maybeSingle();
-  if (!eq) return json({ erro: "Sem acesso." }, 403);
-  if (!handle) return json({ erro: "Coloque a InfiniteTag da loja em Ajustes primeiro." }, 400);
+  let equipe = false;
+  if (jwt.split(".").length === 3) {
+    const { data: u } = await db.auth.getUser(jwt);
+    if (u?.user) { const { data: eq } = await db.from("equipe").select("user_id").eq("user_id", u.user.id).maybeSingle(); equipe = !!eq; }
+  }
+  if (!handle) return json({ erro: equipe ? "Coloque a InfiniteTag da loja em Ajustes primeiro." : "Pagamento por link indisponível agora. Combine pelo WhatsApp." }, 400);
 
   const { pedido_id, novo } = await req.json().catch(() => ({}));
+  if (!/^[0-9a-f-]{36}$/i.test(String(pedido_id || ""))) return json({ erro: "Pedido não encontrado." }, 404);
   const { data: p } = await db.from("pedidos").select("*").eq("id", pedido_id).maybeSingle();
   if (!p) return json({ erro: "Pedido não encontrado." }, 404);
+  if (!equipe && (p.status !== "aguardando" || !/link/i.test(p.pagamento || "") || Date.now() - new Date(p.criado_em).getTime() > 24 * 3600e3))
+    return json({ erro: "Esse pedido não pode gerar link por aqui. Fale com a gente no WhatsApp." }, 403);
   if (p.pago) return json({ erro: "Esse pedido já está marcado como pago." }, 400);
   const total = cent(p.total);
   if (total < 100) return json({ erro: "O valor mínimo do link é R$ 1,00." }, 400);

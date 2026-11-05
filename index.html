@@ -725,6 +725,10 @@
   document.addEventListener("keydown", e => { if(e.key==="Escape"){ if(!$("pd-scrim").hidden) fechar("pd-scrim"); else if(!$("ck-scrim").hidden) fechar("ck-scrim"); } });
 
   carregar();
+  // voltou do link de pagamento da InfinitePay
+  (() => { const q = new URLSearchParams(location.search); const n = q.get("pago");
+    if (n && /^\d+$/.test(n)) { setTimeout(() => { toast(`Pagamento do pedido #${n} recebido. Obrigado! 🧡`); toast._t && clearTimeout(toast._t); toast._t = setTimeout(()=>$("toast").hidden=true, 6000); }, 600);
+      try { history.replaceState(null, "", location.pathname); } catch(e) {} } })();
   setInterval(atualizarAgenda, 60000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) atualizarAgenda(); });
 })();

@@ -110,6 +110,7 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
 .combo{background:var(--pistache);color:var(--on-pistache);border-radius:var(--r-sm);padding:6px 10px;font-size:14px}
 .nota{border-left:3px solid var(--line);padding:2px 10px;font-size:13px;color:var(--muted);font-style:italic}
 .btn-wa,.ped a.btn-wa{background:#1F8F4E;color:#fff;text-decoration:none}
+.linkpg{border-top:1px dashed var(--line);margin-top:10px;padding-top:10px;display:flex;flex-direction:column;gap:8px}
 .avisos{background:color-mix(in srgb,var(--mortadela) 22%,var(--surface));border-radius:12px;padding:10px 14px;margin:0 0 12px;font-size:14px}
 .avisos ul{margin:6px 0 0;padding-left:18px}
 .it-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:6px 14px}
@@ -575,6 +576,22 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
     return L.join("\n");
   }
 
+  // link da InfinitePay: botões para mandar no WhatsApp e copiar
+  function msgLink(p, url){
+    return `Oi, ${(p.nome||"").split(" ")[0]}! Aqui é da Cacio & Pepe 🥪\nSegue o link para pagar seu pedido *#${p.numero}* (${brl(p.total)}). Dá para pagar no cartão de crédito, débito ou Pix:\n${url}\n\nAssim que o pagamento cair, ele já aparece aqui pra gente ✅`;
+  }
+  function ligarCopiarLink(el){
+    el.querySelectorAll("[data-copiar-link]").forEach(b => b.onclick = async () => {
+      try { await navigator.clipboard.writeText(b.dataset.copiarLink); toast("Link copiado"); } catch(e) { toast("Não deu para copiar. Use o botão do WhatsApp."); }
+    });
+  }
+  function linkPgHTML(p, url){
+    const tel = telWa(p.telefone);
+    return `<span class="note">Link de pagamento de ${brl(p.total)} pronto. Quando o cliente pagar, o pedido fica pago sozinho.</span>
+      <div class="acts">${tel?`<a class="btn btn-wa" href="https://wa.me/${tel}?text=${encodeURIComponent(msgLink(p, url))}" target="_blank" rel="noopener">Mandar link no WhatsApp</a>`:""}
+      <button class="btn btn-ghost" type="button" data-copiar-link="${esc(url)}">Copiar link</button></div>`;
+  }
+
   async function renderPedidos(){
     const el = $("t-pedidos");
     if (!el.innerHTML) el.innerHTML = `<p class="note">Carregando…</p>`;
@@ -611,6 +628,16 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
     }
     el.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { pedFiltro = b.dataset.f; renderPedidos(); });
     el.querySelectorAll("[data-act]").forEach(b => b.onclick = () => acaoPedido(b));
+    el.querySelectorAll("[data-gerar-link]").forEach(b => b.onclick = async () => {
+      const p = PEDS_LISTA.find(x => x.id === b.dataset.gerarLink);
+      b.disabled = true; b.textContent = "Gerando link…";
+      const { data, error } = await sb.functions.invoke("infinitepay", { body:{ pedido_id:p.id } });
+      let msg = data?.erro; if (error) { try { msg = (await error.context.json()).erro; } catch(e) { msg = msg || "Não deu para gerar o link agora."; } }
+      if (msg || !data?.url) { b.disabled = false; b.textContent = `Gerar link de pagamento (${brl(p.total)})`; toast(msg || "Não deu para gerar o link agora."); return; }
+      p.link_pagamento = data.url; p.link_valor = p.total;
+      b.closest("[data-linkpg]").innerHTML = linkPgHTML(p, data.url); ligarCopiarLink(el);
+    });
+    ligarCopiarLink(el);
     el.querySelectorAll("[data-editar]").forEach(b => b.onclick = () => { pedEdit = b.dataset.editar; novoAberto = false; renderPedidos(); });
     if (novoAberto) { ligarForm($("f-novo"), null, PRE); if (PRE) $("f-novo").scrollIntoView({ behavior:"smooth", block:"start" }); }
     el.querySelectorAll("form[data-edit]").forEach(f => ligarForm(f, PEDS_LISTA.find(p=>p.id===f.dataset.edit)));
@@ -651,7 +678,8 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
       ${p.obs?`<div class="meta">Observação do cliente: ${esc(p.obs)}</div>`:""}
       ${p.nota_interna?`<div class="nota">${esc(p.nota_interna)}</div>`:""}
       ${p.cancelado_motivo&&p.status==="cancelado"?`<div class="meta">${esc(p.cancelado_motivo)}</div>`:""}
-      <div class="tot"><span>${esc(p.pagamento)}${p.troco?` · troco p/ ${esc(p.troco)}`:""} · ${p.pago?"pago":"a receber"}</span><span>${brl(p.total)}</span></div>
+      <div class="tot"><span>${esc(p.pagamento)}${p.troco?` · troco p/ ${esc(p.troco)}`:""} · ${p.pago?`<b style="color:var(--ok)">pago</b>${p.pago_via?` (${esc(p.pago_via)})`:""}${p.comprovante_url?` · <a href="${esc(p.comprovante_url)}" target="_blank" rel="noopener">comprovante</a>`:""}`:"a receber"}</span><span>${brl(p.total)}</span></div>
+      ${!p.pago&&p.status!=="cancelado"&&CFG.infinitepay_handle?`<div class="linkpg" data-linkpg="${p.id}">${p.link_pagamento&&Number(p.link_valor)===Number(p.total)?linkPgHTML(p, p.link_pagamento):`<button class="btn btn-ghost" type="button" data-gerar-link="${p.id}">Gerar link de pagamento (${brl(p.total)})</button>`}</div>`:""}
       <div class="acts">
         ${p.status==="aguardando"&&tel?`<a class="btn btn-wa" href="https://wa.me/${tel}?text=${encodeURIComponent(msgRecuperacao(p))}" target="_blank" rel="noopener">Chamar no WhatsApp</a>`:""}
         ${(p.status==="aguardando"||p.status==="confirmado")&&tel?`<a class="btn btn-wa" href="https://wa.me/${tel}?text=${encodeURIComponent(msgResumo(p))}" target="_blank" rel="noopener">Mandar resumo do pedido</a>`:""}
@@ -1041,6 +1069,7 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
         </div>
         <span class="note">Com a chave preenchida, o cliente vê o QR Code e o Pix copia e cola com o valor do pedido. O dinheiro cai direto na conta; confira o comprovante e marque como pago.</span>
         <div class="fl"><label for="c-pg">Formas de pagamento na entrega/retirada</label><input class="input" id="c-pg" value="${esc(CFG.pagamentos.join(", "))}"><span class="note">Separadas por vírgula.</span></div>
+        <div class="fl"><label for="c-ip">InfiniteTag da InfinitePay (para links de pagamento)</label><input class="input" id="c-ip" value="${esc(CFG.infinitepay_handle||"")}" placeholder="Ex: cacioepepe" autocomplete="off"><span class="note">É o seu $nome no app da InfinitePay, sem o $. Com ela preenchida, os pedidos ganham o botão "Link de pagamento" com o valor certo, e o pedido fica pago sozinho quando o cliente paga.</span></div>
 
         <b style="margin-top:8px">Frete</b>
         <div class="fl"><label for="c-fm">Como cobrar a entrega</label><select class="input" id="c-fm">
@@ -1175,7 +1204,8 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
         frete_modo:$("c-fm").value, taxa_entrega:Math.max(0,parseFloat($("c-tx").value)||0),
         frete_base:Math.max(0,parseFloat($("c-fb").value)||0), frete_km:Math.max(0,parseFloat($("c-fk").value)||0),
         frete_min:Math.max(0,parseFloat($("c-fmin").value)||0), frete_raio_km:Math.max(0,parseFloat($("c-fr").value)||0),
-        expirar_horas:Math.max(0,parseFloat($("c-exp").value)||0), msg_recuperacao:$("c-rec").value.trim() };
+        expirar_horas:Math.max(0,parseFloat($("c-exp").value)||0), msg_recuperacao:$("c-rec").value.trim(),
+        infinitepay_handle:$("c-ip").value.trim().replace(/^\$/,"") };
       if (!row.pagamentos.length && !row.pix_chave) { toast("Coloque pelo menos uma forma de pagamento."); return; }
       if (tipo && !row.pix_chave.replace(/\D/g,"") && tipo!=="email" && tipo!=="aleatoria") { toast("Preencha a chave Pix."); return; }
       const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true;

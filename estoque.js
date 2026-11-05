@@ -152,6 +152,8 @@ window.Modulos = function (ctx) {
 
   // ======================= COMPRAS =======================
   let INSUMOS = null, APELIDOS = null, rascunho = null;
+  // voltou do atalho do iPhone: atualiza a lista de notas esperando
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && !rascunho && location.hash === "#compras" && $("t-compras")?.offsetParent) renderCompras(); });
   async function carregarInsumos() {
     if (INSUMOS && APELIDOS) return;
     const [a, b] = await Promise.all([sb.from("insumos").select("*").eq("ativo", true).order("nome"), sb.from("apelidos_nota").select("*")]);
@@ -178,7 +180,12 @@ window.Modulos = function (ctx) {
     const { data, error } = await sb.from("compras").select("*, compra_itens(*)").order("data", { ascending: false }).order("criado_em", { ascending: false }).limit(40);
     if (error) { el.innerHTML = `<p class="err">${esc(U.erro(error))}</p>`; return; }
     const ins = id => INSUMOS.find(i => i.id === id);
+    const { data: pend } = await sb.from("notas_pendentes").select("*").order("criado_em", { ascending: false });
+    const totNota = r => (r.itens || []).reduce((a, x) => a + Number(x.valor || 0), 0) - Number(r.desconto || 0);
     el.innerHTML = `
+      ${(pend || []).length ? `<div class="card pend"><div class="jh"><b>Notas do atalho esperando conferência</b></div>
+        <ul class="lista">${pend.map(n => `<li><span><b>${esc(tituloFornecedor(n.resultado.fornecedor) || "Compra")}</b> <span class="note">· ${n.resultado.itens.length} ite${n.resultado.itens.length === 1 ? "m" : "ns"} · ${brl(totNota(n.resultado))}${n.resultado.data ? ` · ${U.ddmm(n.resultado.data)}` : ""}</span></span>
+          <span class="acts"><button class="btn btn-primary" type="button" data-pend="${n.id}">Conferir</button><button class="small-btn rm" type="button" data-pend-x="${n.id}">Descartar</button></span></li>`).join("")}</ul></div>` : ""}
       <div class="bar"><h2>Compras</h2><div class="acts">
         <button class="btn btn-primary" type="button" id="c-scan">Escanear QR Code</button>
         <label class="btn btn-ghost" for="c-foto">Usar foto</label>
@@ -192,7 +199,20 @@ window.Modulos = function (ctx) {
           <ul class="lista">${c.compra_itens.map(x => `<li>${esc(x.descricao)} <span class="note">→ ${x.insumo_id ? esc(ins(x.insumo_id)?.nome || "insumo inativo") : "não é insumo"}${x.conteudo ? ` · ${N(x.embalagens, 2)} × ${qtdTxt(x.conteudo, ins(x.insumo_id)?.unidade || "")}` : ""}</span> <b>${brl(Number(x.valor) - Number(x.desconto))}</b></li>`).join("")}</ul>
           ${c.origem !== "planilha" ? `<div class="row-act"><button class="small-btn rm" type="button" data-del-compra="${c.id}">Excluir compra</button></div>` : ""}
         </details>`;
-      }).join("") || `<p class="empty">Nenhuma compra ainda.</p>`}</div>`;
+      }).join("") || `<p class="empty">Nenhuma compra ainda.</p>`}</div>
+      <details class="card atalho" id="c-atalho">
+        <summary class="jh"><div><b>Atalho do iPhone para notas</b><small>Lê o QR e baixa a nota pelo próprio celular, igual ao Haven</small></div></summary>
+        <div data-atalho></div>
+      </details>`;
+    el.querySelectorAll("[data-pend]").forEach(b => b.onclick = async () => {
+      const n = pend.find(x => x.id === b.dataset.pend);
+      await usarResultado({ ...n.resultado, origem: "qr", chave: n.chave || n.resultado.chave });
+      if (rascunho) rascunho.pendente = n.id;
+    });
+    el.querySelectorAll("[data-pend-x]").forEach(b => b.onclick = () => confirmar(b, "Toque de novo para descartar", async () => {
+      await sb.from("notas_pendentes").delete().eq("id", b.dataset.pendX); renderCompras();
+    }));
+    $("c-atalho").ontoggle = () => { if ($("c-atalho").open) montarAtalho($("c-atalho").querySelector("[data-atalho]")); };
     $("c-scan").onclick = abrirScanner;
     $("c-foto").onchange = e => { const f = e.target.files[0]; e.target.value = ""; if (f) escanear(f); };
     $("c-manual").onclick = () => { rascunho = { origem: "manual", fornecedor: "", data: hoje(), chave: null, desconto: 0, itens: [{ descricao: "", insumo_id: "", embalagens: 1, conteudo: null, valor: 0 }] }; renderRascunho(); };
@@ -244,7 +264,7 @@ window.Modulos = function (ctx) {
     }
     if (res.chave) {
       const { data: ja } = await sb.from("compras").select("id,data").eq("chave_nfce", res.chave).maybeSingle();
-      if (ja) { toast(`Essa nota já foi lançada em ${U.ddmm(ja.data)}.`); renderCompras(); return; }
+      if (ja) { await sb.from("notas_pendentes").delete().eq("chave", res.chave); toast(`Essa nota já foi lançada em ${U.ddmm(ja.data)}.`); renderCompras(); return; }
     }
     rascunho = { origem: res.origem, fornecedor: tituloFornecedor(res.fornecedor), data: res.data || hoje(), chave: res.chave, desconto: res.desconto || 0,
       itens: res.itens.map(it => {
@@ -314,6 +334,41 @@ window.Modulos = function (ctx) {
       setTimeout(ler, 160);
     };
     ler();
+  }
+  // ---------- atalho do iPhone ----------
+  async function montarAtalho(box) {
+    const { data: tk } = await sb.from("atalho_tokens").select("criado_em,ultimo_uso").maybeSingle();
+    const passos = url => `
+      <ol class="passos">
+        <li>Abra o app <b>Atalhos</b>, toque em <b>+</b> e dê o nome <b>Nota Cacio</b>.</li>
+        <li>Adicione a ação <b>Escanear Código QR/de Barras</b>.</li>
+        <li>Adicione <b>Obter Conteúdo do URL</b>. Ela já usa o "Código QR/de Barras" como endereço; não mexa em nada.</li>
+        <li>Adicione outra <b>Obter Conteúdo do URL</b>. No endereço, cole ${url ? "o link abaixo" : "o seu link (gere abaixo)"}. Toque na setinha para abrir as opções:
+          <ul><li>Método: <b>POST</b></li><li>Corpo da Solicitação: <b>JSON</b></li>
+          <li>Adicionar campo → <b>Texto</b>, chave <code>url</code>, valor: segure e escolha a variável <b>Código QR/de Barras</b></li>
+          <li>Adicionar campo → <b>Texto</b>, chave <code>html</code>, valor: a variável <b>Conteúdo do URL</b> (a do passo 3)</li></ul></li>
+        <li>Adicione <b>Mostrar Notificação</b> com o <b>Conteúdo do URL</b> (o do passo 4). É a resposta do painel.</li>
+        <li>Pronto. Coloque o atalho na tela de início (Compartilhar → Adicionar à Tela de Início) ou peça "E aí Siri, Nota Cacio".</li>
+      </ol>
+      <p class="note">Usando: toca no atalho, aponta pro QR da nota e espera a notificação. A nota aparece aqui em Compras em "Notas do atalho" para conferir e salvar.</p>`;
+    box.innerHTML = `${tk ? `<p class="note">Este login já tem um link de atalho${tk.ultimo_uso ? `, usado pela última vez em ${new Date(tk.ultimo_uso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : ", ainda não usado"}. Por segurança ele só aparece na hora em que é gerado: se perdeu, gere outro (o antigo para de funcionar).</p>` : ""}
+      ${passos(false)}
+      <div class="acts"><button class="btn btn-primary" type="button" data-gerar>${tk ? "Gerar novo link" : "Gerar meu link do atalho"}</button></div>
+      <div data-link></div>`;
+    box.querySelector("[data-gerar]").onclick = async ev => {
+      const b = ev.currentTarget;
+      if (tk && !b.dataset.ok) { b.dataset.ok = 1; b.textContent = "Toque de novo: o link antigo vai parar"; return; }
+      b.disabled = true;
+      const { data: t, error } = await sb.rpc("gerar_token_atalho");
+      b.disabled = false;
+      if (error) { toast(U.erro(error)); return; }
+      const link = `${CACIO.url}/functions/v1/nota-atalho?t=${t}`;
+      box.querySelector("[data-link]").innerHTML = `<p style="margin:12px 0 6px"><b>Seu link (cole no passo 4):</b></p>
+        <textarea class="input" rows="3" readonly>${esc(link)}</textarea>
+        <div class="acts" style="margin-top:8px"><button class="btn btn-primary" type="button" data-copiar>Copiar link</button></div>
+        <p class="note">Esse link é como uma senha: quem tiver ele consegue mandar notas para o painel. Não compartilhe fora da equipe.</p>`;
+      box.querySelector("[data-copiar]").onclick = async () => { try { await navigator.clipboard.writeText(link); toast("Link copiado"); } catch (e) { box.querySelector("[data-link] textarea").select(); toast("Selecione e copie o link"); } };
+    };
   }
   async function lerQr(url) {
     $("t-compras").innerHTML = `<div class="card"><b>Lendo a nota…</b><p class="note">Buscando os itens na Sefaz.</p></div>`;
@@ -440,7 +495,7 @@ window.Modulos = function (ctx) {
       const bruto = itens.reduce((a, i) => a + Number(i.valor || 0), 0); const desc = Number(r.desconto) || 0;
       const btn = f.querySelector("button[type=submit]"); btn.disabled = true;
       const { data: c, error } = await sb.from("compras").insert({ data: r.data, fornecedor: r.fornecedor.trim(), origem: r.origem, chave_nfce: r.chave || null }).select().single();
-      if (error) { btn.disabled = false; toast(/chave_nfce/.test(error.message) ? "Essa nota já foi lançada." : U.erro(error)); return; }
+      if (error) { btn.disabled = false; if (/chave_nfce/.test(error.message) && r.pendente) await sb.from("notas_pendentes").delete().eq("id", r.pendente); toast(/chave_nfce/.test(error.message) ? "Essa nota já foi lançada." : U.erro(error)); return; }
       const linhas = itens.map(i => ({ compra_id: c.id, descricao: i.descricao.trim(), insumo_id: i.insumo_id || null, embalagens: Number(i.embalagens) || 1,
         conteudo: i.insumo_id ? Number(i.conteudo) : null, valor: Number(i.valor) || 0,
         desconto: bruto > 0 ? Math.round(desc * (Number(i.valor) || 0) / bruto * 100) / 100 : 0 }));
@@ -448,6 +503,7 @@ window.Modulos = function (ctx) {
       if (r2.error) { btn.disabled = false; await sb.from("compras").delete().eq("id", c.id); toast(U.erro(r2.error)); return; }
       const aprender = itens.filter(i => i.insumo_id && i.descricao.trim()).map(i => ({ texto: norm(i.descricao), insumo_id: i.insumo_id, conteudo: Number(i.conteudo) || null }));
       if (aprender.length) await sb.from("apelidos_nota").upsert(aprender);
+      if (r.pendente) await sb.from("notas_pendentes").delete().eq("id", r.pendente);
       rascunho = null; APELIDOS = null; toast("Compra salva. O estoque já foi atualizado."); renderCompras();
     };
   }

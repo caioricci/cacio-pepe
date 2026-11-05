@@ -174,6 +174,8 @@
   .btn-apple{background:#000;color:#fff;border-color:#000;font-weight:600}
   .btn-apple .ap{display:inline-flex;align-items:center;gap:1px;margin-left:6px;font-size:1.15em;letter-spacing:-.01em}
   .btn-apple svg{width:15px;height:18px;margin-top:-3px}
+  .prox{display:inline-block;background:var(--vinho);color:var(--on-vinho);font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:999px;margin-right:6px;vertical-align:2px}
+  .mais-datas{width:100%;margin-top:12px}
 </style>
 </head>
 <body>
@@ -474,6 +476,11 @@
     SLOTS_OK.forEach(s => (days[s.data] ||= []).push(s));
     const restr = restricoes();
     const sel = SLOTS.find(s=>s.data+"|"+s.janela_id===ck.slot);
+    // mostra só a data aberta mais próxima (e a escolhida); o resto fica em "Ver mais datas"
+    const diasLista = Object.entries(days);
+    const iPrimeiro = Math.max(0, diasLista.findIndex(([,ss]) => ss.some(s=>slotInfo(s).ok)));
+    const diasVisiveis = ck.maisDatas ? diasLista : diasLista.filter(([d],i) => i===iPrimeiro || (sel && sel.data===d));
+    const escondidas = diasLista.length - diasVisiveis.length;
     const onde = ck.modo==="Entrega" ? "entrega" : "retirada";
     const temPix = !!CFG.pix_chave;
     const v = k => esc(D[k]);
@@ -504,12 +511,13 @@
         ${restr.length?`<div class="frete dica">${restr.map(p=>`<b>${esc(p.nome)}</b> sai só ${diasFrase(p.dias_semana)}`).join("; ")}, por isso só aparecem esses dias.</div>`:""}
         ${CFG.vendas_pausadas||!SLOTS.length?`<p class="err">Não há datas abertas agora. Volte mais tarde ou fale com a gente no WhatsApp.</p>`:
         !SLOTS_OK.length?`<p class="err">Não há ${diasFrase([...new Set(restr.flatMap(p=>p.dias_semana))]).replace(/^(às|aos) /,"")} abertas agora. Tire do carrinho o que só sai nesse dia ou fale com a gente no WhatsApp.</p>`:
-        `<div class="days">${Object.entries(days).map(([d,ss])=>`<div class="day"><h4>${U.diaLongo(d)}</h4><div class="slots">${ss.map(s=>{const k=s.data+"|"+s.janela_id; const inf=slotInfo(s); return `
+        `<div class="days">${diasVisiveis.map(([d,ss],i)=>`<div class="day"><h4>${!ck.maisDatas&&i===0&&diasLista[iPrimeiro][0]===d?`<span class="prox">Próxima data</span> `:""}${U.diaLongo(d)}</h4><div class="slots">${ss.map(s=>{const k=s.data+"|"+s.janela_id; const inf=slotInfo(s); return `
           <button type="button" class="opt slot" data-slot="${k}" aria-pressed="${ck.slot===k}" ${inf.ok?"":"disabled"}>
             <b>${esc(s.turno)}${s.horario?` · ${esc(s.horario)}`:""}</b>
             <span class="cut">${s.modo==="extra"?"Pão pronto, saída hoje":`Pedidos até ${U.quando(s.corte)}, ${U.hora(s.corte)}`}</span>
             <span class="left ${inf.cls}">${inf.txt}</span>
-          </button>`;}).join("")}</div></div>`).join("")}</div>`}
+          </button>`;}).join("")}</div></div>`).join("")}</div>
+        ${escondidas>0||ck.maisDatas&&diasLista.length>1?`<button class="btn btn-ghost mais-datas" type="button" id="mais-datas">${ck.maisDatas?"Mostrar só a próxima data":`Ver mais datas (${escondidas})`}</button>`:""}`}
         ${sel?`<div class="chosen">Seu pedido será ${ck.modo==="Entrega"?"entregue":"retirado"} <b>${U.diaLongo(sel.data)}</b>, no <b>${esc(sel.turno.toLowerCase())}</b>${sel.horario?` (${esc(sel.horario)})`:""}.</div>`:""}
       </div>
 
@@ -553,7 +561,8 @@
     body.querySelectorAll("[data-inc]").forEach(b=>b.onclick=()=>{ const l=cart[+b.dataset.inc]; l.qtd=Math.min(20,l.qtd+1); saveCart(); renderCartBar(); renderCheckout(); });
     $("m-ent").onclick=()=>{ ck.modo="Entrega"; ck.err=""; renderCheckout(); if (ck.frete.estado==="vazio") calcularFrete(); };
     $("m-ret").onclick=()=>{ ck.modo="Retirada"; ck.err=""; renderCheckout(); };
-    body.querySelectorAll("[data-slot]").forEach(b=>b.onclick=()=>{ ck.slot=b.dataset.slot; ck.err=""; renderCheckout(); });
+    body.querySelectorAll("[data-slot]").forEach(b=>b.onclick=()=>{ ck.slot=b.dataset.slot; ck.err=""; ck.maisDatas=false; renderCheckout(); });
+    if ($("mais-datas")) $("mais-datas").onclick=()=>{ ck.maisDatas=!ck.maisDatas; renderCheckout(); };
     body.querySelectorAll("[data-pag]").forEach(b=>b.onclick=()=>{ ck.pag=b.dataset.pag; ck.err=""; renderCheckout(); });
     body.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>fechar("ck-scrim"));
     // campos: guardam no estado sem redesenhar a tela (não perde o foco)

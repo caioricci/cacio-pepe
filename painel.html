@@ -555,6 +555,26 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
       .replace(/\{itens\}/g, itens).replace(/\{total\}/g, brl(p.total));
   }
 
+  // mensagem da loja para o cliente com o pedido completo (quando ele não mandou o WhatsApp, ou para confirmar)
+  function msgResumo(p){
+    const L = [`Oi, ${(p.nome||"").split(" ")[0]}! Aqui é da Cacio & Pepe 🥪`, `Recebemos seu pedido *#${p.numero}*${p.canal==="site"?" pelo site":""}:`, ""];
+    p.itens.forEach(i => L.push(`• ${i.qtd}x ${i.nome}${i.opcao?` (${i.opcao.split(";").map(x=>x.split(":").pop().trim()).join(", ")})`:""}${i.obs?` – obs: ${i.obs}`:""}`));
+    L.push("");
+    const quando = `${U.diaLongo(p.data)}, ${jTurno(p.janela_id).toLowerCase()}${p.horario_combinado?` (${p.horario_combinado})`:""}`;
+    if (p.modo==="Entrega") {
+      L.push(`📅 *Entrega:* ${quando}`, `📍 ${p.endereco}`);
+      L.push(`🛵 Frete: ${p.frete_gratis?"grátis":p.frete_combinar?"a combinar":brl(p.taxa_entrega)}`);
+    } else {
+      L.push(`📅 *Retirada:* ${quando}`, `📍 ${CFG.endereco_retirada||""}`);
+    }
+    L.push(`💰 *Total: ${brl(p.total)}* · ${p.pagamento}${p.troco?` (troco para ${p.troco})`:""}`);
+    if (p.pago) L.push("Pagamento recebido ✅ Obrigado!");
+    else if (/pix/i.test(p.pagamento||"")) L.push("Ainda não identificamos o Pix. Se já pagou, manda o comprovante aqui, por favor.");
+    if (p.obs) L.push("", `Sua observação: ${p.obs}`);
+    L.push("", "Está tudo certo? Qualquer ajuste é só responder aqui 😊");
+    return L.join("\n");
+  }
+
   async function renderPedidos(){
     const el = $("t-pedidos");
     if (!el.innerHTML) el.innerHTML = `<p class="note">Carregando…</p>`;
@@ -634,6 +654,7 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
       <div class="tot"><span>${esc(p.pagamento)}${p.troco?` · troco p/ ${esc(p.troco)}`:""} · ${p.pago?"pago":"a receber"}</span><span>${brl(p.total)}</span></div>
       <div class="acts">
         ${p.status==="aguardando"&&tel?`<a class="btn btn-wa" href="https://wa.me/${tel}?text=${encodeURIComponent(msgRecuperacao(p))}" target="_blank" rel="noopener">Chamar no WhatsApp</a>`:""}
+        ${(p.status==="aguardando"||p.status==="confirmado")&&tel?`<a class="btn btn-wa" href="https://wa.me/${tel}?text=${encodeURIComponent(msgResumo(p))}" target="_blank" rel="noopener">Mandar resumo do pedido</a>`:""}
         ${p.status==="aguardando"?`<button class="btn btn-primary" type="button" data-act="confirmado" data-id="${p.id}">Confirmar</button>`:""}
         ${p.status==="confirmado"?`<button class="btn btn-primary" type="button" data-act="entregue" data-id="${p.id}">Marcar entregue</button>`:""}
         ${p.status!=="cancelado"?`<button class="btn btn-ghost" type="button" data-act="pago" data-v="${!p.pago}" data-id="${p.id}">${p.pago?"Desmarcar pago":"Marcar pago"}</button>`:""}

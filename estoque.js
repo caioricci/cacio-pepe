@@ -220,7 +220,11 @@ window.Modulos = function (ctx) {
     if (qr && /^https?:\/\//i.test(qr)) {
       $("c-pass").textContent = "QR Code encontrado. Buscando os itens na Sefaz…";
       res = await chamar({ qr });
-      if (res.erro) { $("c-pass").textContent = res.erro + " Lendo pela foto…"; res = await chamar({ imagem: jpeg(img, 1600) }); }
+      if (res.erro) {
+        const r1 = res;
+        $("c-pass").textContent = "A Sefaz não respondeu. Lendo pela foto…"; res = await chamar({ imagem: jpeg(img, 1600) });
+        if (res.erro) { colarDaSefaz(qr, r1); return; }
+      }
     } else {
       $("c-pass").textContent = "Sem QR Code legível. Lendo a foto com a IA…";
       res = await chamar({ imagem: jpeg(img, 1600) });
@@ -313,7 +317,54 @@ window.Modulos = function (ctx) {
   }
   async function lerQr(url) {
     $("t-compras").innerHTML = `<div class="card"><b>Lendo a nota…</b><p class="note">Buscando os itens na Sefaz.</p></div>`;
-    await usarResultado(await chamar({ qr: url }));
+    const res = await chamar({ qr: url });
+    if (res.erro) { colarDaSefaz(url, res); return; }
+    await usarResultado(res);
+  }
+  // A Sefaz-SP bloqueia o servidor; o celular abre a nota normalmente. Então: abre, copia o texto, cola aqui.
+  function colarDaSefaz(url, res) {
+    const el = $("t-compras");
+    const chave = (() => { try { return (new URL(url).searchParams.get("p") || "").split("|")[0].replace(/\D/g, "").slice(0, 44) || null; } catch (e) { return null; } })();
+    el.innerHTML = `<div class="card">
+      <b>Falta um passo para ler essa nota</b>
+      <p class="note">${res.bloqueado ? "A Sefaz de SP não deixa o sistema consultar a nota sozinho, mas no seu celular ela abre normal." : esc(res.erro)}</p>
+      <ol class="passos">
+        <li>Toque em <b>Abrir nota na Sefaz</b>.</li>
+        <li>Na página da nota, segure o dedo no texto, toque em <b>Selecionar tudo</b> e depois em <b>Copiar</b>.</li>
+        <li>Volte aqui, cole no campo abaixo e toque em <b>Ler itens</b>.</li>
+      </ol>
+      <div class="acts" style="margin:10px 0"><a class="btn btn-primary" href="${esc(url)}" target="_blank" rel="noopener">Abrir nota na Sefaz</a></div>
+      <textarea class="input" id="c-colar" rows="6" placeholder="Cole aqui o texto da página da nota"></textarea>
+      <div class="acts" style="margin-top:10px"><button class="btn btn-primary" type="button" id="c-lertxt">Ler itens</button>
+        <label class="btn btn-ghost" for="c-foto3">Usar foto da nota</label><input type="file" id="c-foto3" accept="image/*" hidden>
+        <button class="btn btn-ghost" type="button" id="c-m3">Lançar à mão</button><button class="btn btn-ghost" type="button" id="c-volta3">Voltar</button></div>
+    </div>`;
+    $("c-foto3").onchange = e => { const f = e.target.files[0]; if (f) escanear(f); };
+    $("c-m3").onclick = () => { rascunho = { origem: "manual", fornecedor: "", data: hoje(), chave, desconto: 0, itens: [{ descricao: "", insumo_id: "", embalagens: 1, conteudo: null, valor: 0 }] }; renderRascunho(); };
+    $("c-volta3").onclick = renderCompras;
+    $("c-lertxt").onclick = () => {
+      const r = lerTextoNota($("c-colar").value);
+      if (!r.itens.length) { toast("Não achei os itens nesse texto. Copie a página inteira da nota."); return; }
+      usarResultado({ ...r, origem: "qr", chave });
+    };
+  }
+  // texto copiado da página da NFC-e: "PRODUTO (Código: 123 ) Qtde.:1 UN: UN Vl. Unit.: 9,99 Vl. Total 9,99"
+  function lerTextoNota(txt) {
+    const t = String(txt || "").replace(/\u00a0/g, " ").replace(/[ \t]+/g, " ");
+    const n = s => Number(String(s).replace(/\./g, "").replace(",", ".")) || 0;
+    const itens = [];
+    const re = /([^\n]+?)\s*\(\s*C[oó]d(?:igo)?\.?:?\s*[^)]*\)\s*Qtde\.?:?\s*([\d.,]+)\s*UN:?\s*([A-Za-z]+)\s*Vl\.?\s*Unit\.?:?\s*([\d.,]+)\s*Vl\.?\s*Total:?\s*([\d.,]+)/gi;
+    let m;
+    while ((m = re.exec(t))) {
+      const desc = m[1].replace(/^.*Vl\.?\s*Total:?\s*[\d.,]+\s*/i, "").trim();
+      if (desc) itens.push({ descricao: desc, quantidade: n(m[2]) || 1, unidade: m[3].toUpperCase(), valor: n(m[5]) || n(m[4]) * (n(m[2]) || 1) });
+    }
+    const linhas = t.split(/\n/).map(l => l.trim()).filter(Boolean);
+    const iCnpj = linhas.findIndex(l => /CNPJ/i.test(l));
+    const fornecedor = iCnpj > 0 ? linhas[iCnpj - 1] : (linhas.find(l => /CNPJ/i.test(l)) || "").split(/CNPJ/i)[0].trim();
+    const dm = t.match(/Emiss[aã]o:?\s*(\d{2})\/(\d{2})\/(\d{4})/i) || t.match(/(\d{2})\/(\d{2})\/(\d{4})\s+\d{2}:\d{2}/);
+    const desc = t.match(/Descontos?\s*R\$:?\s*([\d.,]+)/i);
+    return { fornecedor, data: dm ? `${dm[3]}-${dm[2]}-${dm[1]}` : null, desconto: desc ? n(desc[1]) : 0, itens };
   }
   const tituloFornecedor = s => (s || "").toLowerCase().replace(/\b(ltda|me|eireli|s\/?a|epp)\b\.?/g, "").replace(/\s+/g, " ").trim().replace(/(^|\s)\S/g, m => m.toUpperCase());
   async function chamar(body) {

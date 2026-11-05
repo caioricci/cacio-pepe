@@ -263,6 +263,7 @@
     cart = cart.filter(l => PRODUTOS.some(p => p.id === l.produto_id)); saveCart();
     renderMenu(); renderCartBar();
     await atualizarAgenda();
+    renderMenu(); // com a agenda carregada, a etiqueta de dias mostra os horários regionais
   }
   const PG_LINK = "Cartão pelo link";
   // iPhone/Mac com Safari: a página da InfinitePay mostra o Apple Pay, então a gente já anuncia
@@ -279,7 +280,7 @@
     const { data, error } = await sb.rpc("disponibilidade", { p_dias: 14 });
     if (error) { $("next-txt").textContent = "Não foi possível carregar a agenda."; return; }
     SLOTS = data || [];
-    const nx = SLOTS.find(s => s.livres > 0);
+    const nx = SLOTS.find(s => s.livres > 0 && !s.cidades?.length);
     const box = $("next");
     if (CFG?.vendas_pausadas || !nx) {
       box.classList.add("closed");
@@ -301,7 +302,7 @@
     $("cats").hidden = cats.length < 2;
     $("menu").innerHTML = cats.map((c,i)=>`<section class="sec" id="cat-${i}"><h2>${esc(c)}</h2>${
       PRODUTOS.filter(p=>p.categoria===c).map(p=>`<button type="button" class="prod" data-id="${p.id}">
-        <div><h3>${esc(p.nome)}</h3><p>${esc(p.descricao)}</p><div class="price">${OPC.aPartir(p)!=null?`<span class="apartir">a partir de</span> ${brl(OPC.aPartir(p))}`:brl(p.preco)}</div>${p.dias_semana?.length?`<span class="tag-dia">Entrega só ${diasFrase(p.dias_semana)}</span>`:""}</div>
+        <div><h3>${esc(p.nome)}</h3><p>${esc(p.descricao)}</p><div class="price">${OPC.aPartir(p)!=null?`<span class="apartir">a partir de</span> ${brl(OPC.aPartir(p))}`:brl(p.preco)}</div>${p.dias_semana?.length?`<span class="tag-dia">${esc(tagDias(p))}</span>`:""}</div>
         <div class="thumb">${p.fotos.length?`<img src="${esc(p.fotos[0])}" alt="" loading="lazy">${p.fotos.length>1?`<span class="n">${p.fotos.length} fotos</span>`:""}`:`<div class="noimg">${esc(p.nome[0])}</div>`}</div>
       </button>`).join("")}</section>`).join("");
     document.querySelectorAll(".prod").forEach(b => b.onclick = () => abrirProduto(b.dataset.id));
@@ -316,7 +317,7 @@
     const fotos = p.fotos || [];
     $("pd-body").innerHTML = `
       ${fotos.length?`<div class="gallery"><div class="slides" id="slides">${fotos.map(f=>`<img src="${esc(f)}" alt="${esc(p.nome)}">`).join("")}</div>${fotos.length>1?`<div class="dots" id="dots">${fotos.map((_,i)=>`<span class="${i?"":"on"}"></span>`).join("")}</div>`:""}</div>`:""}
-      <div class="pd gutter"><h3 id="pd-title">${esc(p.nome)}</h3><p>${esc(p.descricao)}</p><div class="price" id="pd-preco">${OPC.aPartir(p)!=null?`<span class="apartir">a partir de</span> ${brl(OPC.aPartir(p))}`:brl(p.preco)}</div>${p.dias_semana?.length?`<span class="tag-dia">Entrega só ${diasFrase(p.dias_semana)}</span>`:""}</div>
+      <div class="pd gutter"><h3 id="pd-title">${esc(p.nome)}</h3><p>${esc(p.descricao)}</p><div class="price" id="pd-preco">${OPC.aPartir(p)!=null?`<span class="apartir">a partir de</span> ${brl(OPC.aPartir(p))}`:brl(p.preco)}</div>${p.dias_semana?.length?`<span class="tag-dia">${esc(tagDias(p))}</span>`:""}</div>
       ${(p.opcoes||[]).map((g,gi)=>`<div class="group gutter" role="radiogroup" aria-labelledby="g-${gi}">
         <div class="group-h"><div><b id="g-${gi}">${esc(g.nome)}</b><small>Escolha 1 opção</small></div>${g.obrigatorio?`<span class="req" id="req-${gi}">Obrigatório</span>`:""}</div>
         ${(g.escolhas||[]).map((e,ei)=>`<label class="choice"><span>${esc(OPC.nome(e))}${OPC.preco(e)!=null?`<small class="cpreco">${brl(OPC.preco(e))}${OPC.unid(e)>1?` · ${brl(OPC.preco(e)/OPC.unid(e))} cada`:""}</small>`:""}</span><input type="radio" name="g${gi}" id="g${gi}-${ei}" value="${esc(OPC.nome(e))}" data-g="${gi}"></label>`).join("")}
@@ -388,6 +389,7 @@
 
   function taxa(){
     if (ck.modo !== "Entrega") return 0;
+    const rg = regional(); if (rg) return rg.taxa_fixa != null ? Number(rg.taxa_fixa) : 0;
     if (gratis()) return 0;
     if (CFG.frete_modo === "fixo") return Number(CFG.taxa_entrega||0);
     return ck.frete.estado === "ok" ? ck.frete.taxa : 0;
@@ -399,12 +401,32 @@
   $("open-cart").onclick = () => { ck.err=""; ck.finalizado=false; $("ck-title").textContent="Meu pedido"; renderCheckout(); abrir("ck-scrim"); atualizarAgenda(); };
 
   function endPub(){ return (CFG.endereco_publico || CFG.endereco_retirada.replace(/,\s*\d+[A-Za-z]?\b/, "")).trim(); }
+  // "Entrega só às sextas (aos sábados, só Rio Claro e Piracicaba)"
+  function tagDias(p){
+    const reg = {}; // dia -> cidades, quando todos os horários daquele dia são regionais
+    for (const d of p.dias_semana) {
+      const ss = SLOTS.filter(s => s.dia_semana === d);
+      if (ss.length && ss.every(s => s.cidades?.length)) reg[d] = [...new Set(ss.flatMap(s => s.cidades))];
+    }
+    const normais = p.dias_semana.filter(d => !reg[d]);
+    let t = normais.length ? `Entrega só ${diasFrase(normais)}` : "";
+    const extra = Object.entries(reg).map(([d, cs]) => `${diasFrase([+d])}, só ${cs.join(" e ")}`).join("; ");
+    if (extra) t = t ? `${t} (${extra})` : `Entrega ${extra}`;
+    return t;
+  }
   function diasFrase(ds){ return ds.slice().sort().map(d => (d===0||d===6 ? "aos " : "às ") + U.DIAS[d] + "s").join(" e ").replace(/ e (aos|às) /g, " e "); }
   // dias em que todos os itens do carrinho podem ser entregues (null = qualquer dia)
   function restricoes(){ return cart.map(l => prod(l.produto_id)).filter(p => p && p.dias_semana?.length); }
-  function slotCompat(s){ return restricoes().every(p => p.dias_semana.includes(s.dia_semana)); }
+  function slotCompat(s){ return restricoes().every(p => p.dias_semana.includes(s.dia_semana)) && (!s.cidades?.length || ck.modo === "Entrega"); }
+  // horários regionais (ex: sábado só para Rio Claro e Piracicaba)
+  const nrm = t => U.semAcento(t).toLowerCase().trim();
+  const cidadesTxt = s => s.cidades.join(" e ");
+  const cidadeOk = s => !s.cidades?.length || s.cidades.some(c => nrm(c) === nrm(D.cidade));
+  function slotSel(){ return ck.slot ? SLOTS.find(s => s.data+"|"+s.janela_id === ck.slot) : null; }
+  function regional(){ const s = slotSel(); return s && s.cidades?.length && ck.modo === "Entrega" ? s : null; }
   function slotInfo(s){
     const need = paes();
+    if (s.cidades?.length && D.cidade.trim() && !cidadeOk(s)) return { ok:false, txt:`Só ${cidadesTxt(s)}`, cls:"none" };
     if (s.livres <= 0) return { ok:false, txt:"Esgotado", cls:"none" };
     if (s.livres < need) return { ok:false, txt:`Só ${s.livres} disponíve${s.livres>1?"is":"l"}`, cls:"none" };
     if (s.livres <= 3) return { ok:true, txt:`Últimas ${s.livres}`, cls:"low" };
@@ -432,6 +454,11 @@
     ck.frete = { estado:"ok", km, cli, taxa: calcTaxa(km) }; renderFrete();
   }
   function freteHTML(){
+    const rg = regional();
+    if (rg) {
+      if (D.cidade.trim() && !cidadeOk(rg)) return `<div class="frete bad">Esse dia é só para entregas em <b>${esc(cidadesTxt(rg))}</b>. Escolha outra data.</div>`;
+      return `<div class="frete">Entrega em ${esc(D.cidade.trim() || cidadesTxt(rg))}: ${rg.taxa_fixa!=null?`<b>${brl(rg.taxa_fixa)}</b>`:"taxa combinada no WhatsApp"}</div>`;
+    }
     const g = gratis();
     if (g) return `<div class="frete gratis">Entrega grátis · <b>${esc(g.nome)}</b></div>`;
     const o = gratisOutroHorario();
@@ -454,7 +481,9 @@
   }
   function totaisHTML(){
     const f = ck.frete; let linhaEnt = "";
-    if (ck.modo==="Entrega") {
+    const rg = regional();
+    if (rg) linhaEnt = `<div><span>Entrega</span><span>${rg.taxa_fixa!=null?brl(rg.taxa_fixa):"A combinar"}</span></div>`;
+    else if (ck.modo==="Entrega") {
       linhaEnt = gratis() ? `<div><span>Entrega</span><span>Grátis</span></div>`
         : CFG.frete_modo==="fixo" ? `<div><span>Entrega</span><span>${taxa()>0?brl(taxa()):"Grátis"}</span></div>`
         : f.estado==="ok" ? `<div><span>Entrega <small>(estimada)</small></span><span>${brl(f.taxa)}</span></div>`
@@ -517,10 +546,11 @@
           <button type="button" class="opt slot" data-slot="${k}" aria-pressed="${ck.slot===k}" ${inf.ok?"":"disabled"}>
             <b>${esc(s.turno)}${s.horario?` · ${esc(s.horario)}`:""}</b>
             <span class="cut">${s.modo==="extra"?"Pão pronto, saída hoje":`Pedidos até ${U.quando(s.corte)}, ${U.hora(s.corte)}`}</span>
+            ${s.cidades?.length?`<span class="cut"><b>Só entregas em ${esc(cidadesTxt(s))}</b></span>`:""}
             <span class="left ${inf.cls}">${inf.txt}</span>
           </button>`;}).join("")}</div></div>`).join("")}</div>
         ${escondidas>0||ck.maisDatas&&diasLista.length>1?`<button class="btn btn-ghost mais-datas" type="button" id="mais-datas">${ck.maisDatas?"Mostrar só a próxima data":`Ver mais datas (${escondidas})`}</button>`:""}`}
-        ${sel?`<div class="chosen">Seu pedido será ${ck.modo==="Entrega"?"entregue":"retirado"} <b>${U.diaLongo(sel.data)}</b>, no <b>${esc(sel.turno.toLowerCase())}</b>${sel.horario?` (${esc(sel.horario)})`:""}.</div>`:""}
+        ${sel?`<div class="chosen">Seu pedido será ${ck.modo==="Entrega"?"entregue":"retirado"} <b>${U.diaLongo(sel.data)}</b>, ${/^almo/i.test(sel.turno)?"no":"à"} <b>${esc(sel.turno.toLowerCase())}</b>${sel.horario?` (${esc(sel.horario)})`:""}.</div>`:""}
       </div>
 
       <div class="ck-sec gutter">
@@ -568,7 +598,7 @@
     body.querySelectorAll("[data-pag]").forEach(b=>b.onclick=()=>{ ck.pag=b.dataset.pag; ck.err=""; renderCheckout(); });
     body.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>fechar("ck-scrim"));
     // campos: guardam no estado sem redesenhar a tela (não perde o foco)
-    body.querySelectorAll("[data-d]").forEach(i => i.oninput = () => { D[i.dataset.d] = i.value; saveDados(); if (i.dataset.d==="bairro") renderFrete(); });
+    body.querySelectorAll("[data-d]").forEach(i => i.oninput = () => { D[i.dataset.d] = i.value; saveDados(); if (i.dataset.d==="bairro"||i.dataset.d==="cidade") renderFrete(); });
     const cep = $("d-cep");
     if (cep) {
       cep.addEventListener("input", async () => {
@@ -610,7 +640,9 @@
     if (ck.modo==="Entrega") {
       if (!D.rua.trim() || !D.num.trim() || !D.cidade.trim()) return "Preencha o endereço de entrega (CEP, rua, número e cidade).";
       if (ck.frete.estado==="calc") return "Aguarde o cálculo da entrega.";
-      if (ck.frete.estado==="fora" && !gratis()) return "Esse endereço está fora da área de entrega.";
+      const rg = regional();
+      if (rg && !cidadeOk(rg)) return `Esse dia é só para entregas em ${cidadesTxt(rg)}. Escolha outra data.`;
+      if (!rg && ck.frete.estado==="fora" && !gratis()) return "Esse endereço está fora da área de entrega.";
     }
     if (!ck.pag) return "Escolha a forma de pagamento.";
     if (!CFG.whatsapp) return "O WhatsApp da loja ainda não foi configurado.";

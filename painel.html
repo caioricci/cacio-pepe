@@ -1105,8 +1105,9 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
       <div class="card">
         <b>Horários de entrega</b>
         <p class="note">O corte é quando as encomendas daquele horário fecham. Ex: almoço de quarta, corte 1 dia antes às 22:00 = terça 22h.</p>
+        <p class="note">"Só para as cidades": separe por vírgula (ex: Rio Claro, Piracicaba). Esse horário só aparece para entrega nessas cidades, sem retirada, e usa o frete fixo dele (vazio = combinado no WhatsApp). Os dias de cada produto ficam no Cardápio.</p>
         <div class="tbl"><table>
-          <thead><tr><th>Dia</th><th>Turno</th><th>Horário mostrado</th><th>Corte (dias antes)</th><th>Corte (hora)</th><th>Capacidade padrão</th><th>Ativo</th><th></th></tr></thead>
+          <thead><tr><th>Dia</th><th>Turno</th><th>Horário mostrado</th><th>Corte (dias antes)</th><th>Corte (hora)</th><th>Capacidade padrão</th><th>Só para as cidades</th><th>Frete fixo (R$)</th><th>Ativo</th><th></th></tr></thead>
           <tbody>${JANELAS.map(j=>`<tr data-jid="${esc(j.id)}">
             <td><select class="input" data-k="dia_semana" aria-label="Dia">${DIA_OPTS.map(([v,l])=>`<option value="${v}" ${j.dia_semana===v?"selected":""}>${l}</option>`).join("")}</select></td>
             <td><input class="input" data-k="turno" value="${esc(j.turno)}" aria-label="Turno"></td>
@@ -1114,6 +1115,8 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
             <td><input class="input" data-k="corte_dias_antes" type="number" min="0" value="${j.corte_dias_antes}" aria-label="Dias antes"></td>
             <td><input class="input" data-k="corte_hora" type="time" value="${j.corte_hora.slice(0,5)}" aria-label="Hora do corte"></td>
             <td><input class="input" data-k="capacidade_padrao" type="number" min="0" value="${j.capacidade_padrao}" aria-label="Capacidade"></td>
+            <td><input class="input" data-k="cidades" value="${esc((j.cidades||[]).join(", "))}" placeholder="Todas (Campinas)" aria-label="Só para as cidades"></td>
+            <td><input class="input" data-k="taxa_fixa" type="number" min="0" step="0.5" value="${j.taxa_fixa??""}" placeholder="${(j.cidades||[]).length?"A combinar":"Normal"}" aria-label="Frete fixo"></td>
             <td><input type="checkbox" data-k="ativo" ${j.ativo?"checked":""} aria-label="Ativo"></td>
             <td><button class="small-btn" type="button" data-savej>Salvar</button></td></tr>`).join("")}</tbody>
         </table></div>
@@ -1226,7 +1229,9 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
       const tr = b.closest("tr"); const g = k => tr.querySelector(`[data-k="${k}"]`);
       const row = { dia_semana:+g("dia_semana").value, turno:g("turno").value.trim()||"Turno", horario:g("horario").value.trim(),
         corte_dias_antes:Math.max(0,parseInt(g("corte_dias_antes").value,10)||0), corte_hora:g("corte_hora").value||"11:00",
-        capacidade_padrao:Math.max(0,parseInt(g("capacidade_padrao").value,10)||0), ativo:g("ativo").checked };
+        capacidade_padrao:Math.max(0,parseInt(g("capacidade_padrao").value,10)||0), ativo:g("ativo").checked,
+        cidades:g("cidades").value.split(",").map(x=>x.trim()).filter(Boolean),
+        taxa_fixa:g("taxa_fixa").value==="" ? null : Math.max(0, parseFloat(g("taxa_fixa").value)||0) };
       const { error } = await sb.from("janelas").update(row).eq("id", tr.dataset.jid);
       if (error) { toast(U.erro(error)); return; }
       await carregarBase(); toast("Horário salvo");

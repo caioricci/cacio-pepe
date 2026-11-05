@@ -169,6 +169,8 @@
 .copia{font-family:ui-monospace,Menlo,monospace;font-size:11px;word-break:break-all;background:var(--paper);border-radius:var(--r-sm);padding:10px;user-select:all}
 
 .foot{padding-block:28px;color:var(--muted);font-size:13px;display:flex;flex-direction:column;gap:4px}
+  .pix-trava .pix-corpo{filter:blur(7px);opacity:.35;pointer-events:none;user-select:none}
+  .trava-msg{background:color-mix(in srgb,var(--vinho) 12%,var(--surface));color:var(--ink);border-radius:12px;padding:10px 12px;font-size:14px;font-weight:600;margin:8px 0}
 </style>
 </head>
 <body>
@@ -571,12 +573,22 @@
   function enderecoTexto(){
     return `${D.rua.trim()}, ${D.num.trim()}${D.comp.trim()?` (${D.comp.trim()})`:""} – ${D.bairro.trim()}, ${D.cidade.trim()}${D.cep?` – CEP ${D.cep}`:""}`;
   }
+  // celular só com números, sem o 55 e sem o 0 da operadora
+  function telDigitos(){
+    let d = D.tel.replace(/\D/g,"");
+    if (d.length>=12 && d.startsWith("55")) d = d.slice(2);
+    if (d.length===12 && d.startsWith("0")) d = d.slice(1);
+    return d;
+  }
   function faltando(){
     if (!cart.length) return "Seu carrinho está vazio.";
     if (!ck.modo) return "Escolha entrega ou retirada.";
     if (!ck.slot) return "Escolha o dia e o horário.";
     if (D.nome.trim().length<2) return "Preencha seu nome.";
-    if (D.tel.replace(/\D/g,"").length<10) return "Preencha seu celular com DDD.";
+    const tel = telDigitos();
+    if (tel.length<10) return "Preencha seu celular com DDD.";
+    if (tel.length>11 || (tel.length===11 && tel[2]!=="9")) return "Confira seu celular: são o DDD e mais 9 dígitos, começando com 9.";
+    if (tel.slice(0,2)!=="19" && ck.telConfirmado!==tel) { ck.telConfirmado = tel; return `Seu celular está com DDD ${tel.slice(0,2)}: (${tel.slice(0,2)}) ${tel.slice(2,-4)}-${tel.slice(-4)}. É por ele que a gente fala com você sobre o pedido. Se estiver certo, toque em enviar de novo.`; }
     if (ck.modo==="Entrega") {
       if (!D.rua.trim() || !D.num.trim() || !D.cidade.trim()) return "Preencha o endereço de entrega (CEP, rua, número e cidade).";
       if (ck.frete.estado==="calc") return "Aguarde o cálculo da entrega.";
@@ -667,17 +679,24 @@
         <div class="num">#${r.numero}</div>
         <h3>Pedido reservado</h3>
         <p>Para <b>${U.diaLongo(sel.data)}, ${esc(sel.turno.toLowerCase())}</b>. Faltam dois passos.</p>
-        <div class="step"><h4>1. Pague ${r.frete_combinar?"":brl(r.total)+" "}com Pix</h4>
-          <div class="qr">${qr.createSvgTag({ cellSize:4, margin:2, scalable:true })}</div>
-          <div class="copia" id="pix-code">${esc(code)}</div>
-          <button class="btn btn-ghost" type="button" id="pix-copy">Copiar código Pix</button>
-          ${r.frete_combinar?`<p>O valor fica em aberto porque a entrega será combinada no WhatsApp.</p>`:""}
+        <div class="step"><h4>1. Envie o pedido no WhatsApp</h4>
+          <p>É por essa mensagem que a gente confirma seu pedido e combina a entrega. Depois de enviar, volte aqui para pagar.</p>
+          <a class="btn btn-primary" id="ck-wa" href="${esc(link)}" target="_blank" rel="noopener">Enviar pedido no WhatsApp</a>
         </div>
-        <div class="step"><h4>2. Envie o pedido e o comprovante</h4>
-          <a class="btn btn-primary" href="${esc(link)}" target="_blank" rel="noopener">Abrir WhatsApp com o pedido</a>
+        <div class="step pix-trava" id="ck-pix">
+          <h4>2. Pague ${r.frete_combinar?"":brl(r.total)+" "}com Pix e mande o comprovante na mesma conversa</h4>
+          <div class="trava-msg" id="ck-trava">Envie o pedido no WhatsApp primeiro. O Pix aparece aqui em seguida.</div>
+          <div class="pix-corpo">
+            <div class="qr">${qr.createSvgTag({ cellSize:4, margin:2, scalable:true })}</div>
+            <div class="copia" id="pix-code">${esc(code)}</div>
+            <button class="btn btn-ghost" type="button" id="pix-copy">Copiar código Pix</button>
+            ${r.frete_combinar?`<p>O valor fica em aberto porque a entrega será combinada no WhatsApp.</p>`:""}
+          </div>
         </div>
         <button class="btn btn-ghost" type="button" data-close>Voltar ao cardápio</button>
       </div>`;
+      const liberarPix = () => { $("ck-pix").classList.remove("pix-trava"); $("ck-trava").hidden = true; };
+      $("ck-wa").addEventListener("click", () => setTimeout(liberarPix, 300));
       $("pix-copy").onclick = async () => {
         try { await navigator.clipboard.writeText(code); toast("Código Pix copiado"); }
         catch(e) { const rg=document.createRange(); rg.selectNodeContents($("pix-code")); const s=getSelection(); s.removeAllRanges(); s.addRange(rg); toast("Selecionado. Copie o código."); }

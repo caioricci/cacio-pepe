@@ -171,6 +171,9 @@
 .foot{padding-block:28px;color:var(--muted);font-size:13px;display:flex;flex-direction:column;gap:4px}
   .pix-trava .pix-corpo{filter:blur(7px);opacity:.35;pointer-events:none;user-select:none}
   .trava-msg{background:color-mix(in srgb,var(--vinho) 12%,var(--surface));color:var(--ink);border-radius:12px;padding:10px 12px;font-size:14px;font-weight:600;margin:8px 0}
+  .btn-apple{background:#000;color:#fff;border-color:#000;font-weight:600}
+  .btn-apple .ap{display:inline-flex;align-items:center;gap:1px;margin-left:6px;font-size:1.15em;letter-spacing:-.01em}
+  .btn-apple svg{width:15px;height:18px;margin-top:-3px}
 </style>
 </head>
 <body>
@@ -258,6 +261,8 @@
     await atualizarAgenda();
   }
   const PG_LINK = "Cartão pelo link";
+  // iPhone/Mac com Safari: a página da InfinitePay mostra o Apple Pay, então a gente já anuncia
+  const TEM_APPLE_PAY = (() => { try { return !!window.ApplePaySession && ApplePaySession.canMakePayments(); } catch(e) { return false; } })();
   function aplicarMarca(){
     if (CFG.aviso) $("aviso").textContent = CFG.aviso;
     if (CFG.logo_url) $("logo").src = CFG.logo_url;
@@ -529,10 +534,10 @@
 
       <div class="ck-sec gutter">
         <h3>Pagamento</h3>
-        ${temPix||CFG.infinitepay_handle?`<div class="pay-g"><span class="lbl">Pagar agora</span><div class="chips">${temPix?`<button type="button" class="chip" data-pag="Pix" aria-pressed="${ck.pag==="Pix"}">Pix</button>`:""}${CFG.infinitepay_handle?`<button type="button" class="chip" data-pag="${PG_LINK}" aria-pressed="${ck.pag===PG_LINK}">Cartão (crédito ou débito)</button>`:""}</div></div>`:""}
+        ${temPix||CFG.infinitepay_handle?`<div class="pay-g"><span class="lbl">Pagar agora</span><div class="chips">${temPix?`<button type="button" class="chip" data-pag="Pix" aria-pressed="${ck.pag==="Pix"}">Pix</button>`:""}${CFG.infinitepay_handle?`<button type="button" class="chip" data-pag="${PG_LINK}" aria-pressed="${ck.pag===PG_LINK}">${TEM_APPLE_PAY?"Apple Pay ou cartão":"Cartão (crédito ou débito)"}</button>`:""}</div></div>`:""}
         <div class="pay-g"><span class="lbl">Pagar na ${onde}</span><div class="chips">${CFG.pagamentos.map(f=>`<button type="button" class="chip" data-pag="${esc(f)}" aria-pressed="${ck.pag===f}">${esc(f)}</button>`).join("")}</div></div>
         ${ck.pag==="Pix"?`<p class="sub" style="margin:0">Depois de enviar, aparecem o QR Code e o Pix copia e cola com o valor certo.</p>`:""}
-        ${ck.pag===PG_LINK?`<p class="sub" style="margin:0">Depois de enviar, você paga online com cartão de crédito ou débito numa página segura da InfinitePay. A confirmação chega pra gente na hora.</p>`:""}
+        ${ck.pag===PG_LINK?`<p class="sub" style="margin:0">Depois de enviar, você paga online ${TEM_APPLE_PAY?"com Apple Pay ou cartão":"com cartão de crédito ou débito"} numa página segura da InfinitePay. A confirmação chega pra gente na hora.</p>`:""}
         ${ck.pag==="Dinheiro"?`<div class="field"><label for="d-troco">Troco para quanto? (opcional)</label><input class="input" id="d-troco" data-d="troco" inputmode="decimal" maxlength="20" placeholder="Ex: 100" value="${v("troco")}"></div>`:""}
         <div class="field"><label for="d-obs">Observação para o pedido (opcional)</label><textarea class="input" id="d-obs" data-d="obs" maxlength="500">${v("obs")}</textarea></div>
       </div>`:""}
@@ -713,22 +718,22 @@
           <a class="btn btn-primary" id="ck-wa" href="${esc(link)}" target="_blank" rel="noopener">Enviar pedido no WhatsApp</a>
         </div>
         <div class="step pix-trava" id="ck-pix">
-          <h4>2. Pague ${r.frete_combinar?"":brl(r.total)+" "}no cartão</h4>
+          <h4>2. Pague ${r.frete_combinar?"":brl(r.total)+" "}${TEM_APPLE_PAY?"com Apple Pay ou cartão":"no cartão"}</h4>
           <div class="trava-msg" id="ck-trava">Envie o pedido no WhatsApp primeiro. O pagamento libera aqui em seguida.</div>
           <div class="pix-corpo">
-            <p>Você vai para a página de pagamento da InfinitePay (crédito ou débito). Quando terminar, volta pra cá sozinho.</p>
-            <button class="btn btn-primary" type="button" id="ck-pagar">Pagar ${r.frete_combinar?"":brl(r.total)+" "}agora</button>
+            <p>${TEM_APPLE_PAY?"Abre a página segura da InfinitePay: toque no botão do Apple Pay lá e confirme com Face ID.":"Você vai para a página de pagamento da InfinitePay (crédito ou débito)."} Quando terminar, volta pra cá sozinho.</p>
+            <button class="btn ${TEM_APPLE_PAY?"btn-apple":"btn-primary"}" type="button" id="ck-pagar">${TEM_APPLE_PAY?`Pagar com <span class="ap"><svg viewBox="0 0 17 20" aria-hidden="true"><path fill="currentColor" d="M14.1 10.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9C3.6 4.8 2 5.8 1.1 7.4c-1.8 3.2-.5 7.9 1.3 10.5.9 1.3 1.9 2.7 3.3 2.6 1.3-.1 1.8-.9 3.4-.9s2 .9 3.4.8c1.4 0 2.3-1.3 3.2-2.6 1-1.5 1.4-2.9 1.4-3-.1 0-2.9-1.1-3-4.2zM11.5 3c.7-.9 1.2-2 1.1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.1.1 2.3-.6 3-1.5z"/></svg>Pay</span>`:`Pagar ${r.frete_combinar?"":brl(r.total)+" "}agora`}</button>
           </div>
         </div>
         <button class="btn btn-ghost" type="button" data-close>Voltar ao cardápio</button>
       </div>`;
       $("ck-wa").addEventListener("click", () => setTimeout(() => { $("ck-pix").classList.remove("pix-trava"); $("ck-trava").hidden = true; }, 300));
       $("ck-pagar").onclick = async () => {
-        const b = $("ck-pagar"); b.disabled = true; b.textContent = "Abrindo pagamento…";
+        const b = $("ck-pagar"); b.disabled = true; const rotulo = b.innerHTML; b.textContent = "Abrindo pagamento…";
         const { data, error } = await sb.functions.invoke("infinitepay", { body:{ pedido_id:r.id } });
         let msg = data?.erro; if (error) { try { msg = (await error.context.json()).erro; } catch(e) {} }
         if (data?.url) { location.href = data.url; return; }
-        b.disabled = false; b.textContent = "Tentar de novo"; toast(msg || "Não deu para abrir o pagamento agora. A gente te manda o link no WhatsApp.");
+        b.disabled = false; b.innerHTML = rotulo; toast(msg || "Não deu para abrir o pagamento agora. A gente te manda o link no WhatsApp.");
       };
     } else {
       $("ck-body").innerHTML = `<div class="gutter done">

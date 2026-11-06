@@ -860,7 +860,7 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
     return `<details class="card pe" data-id="${id}">
       <summary><div class="mini">${p.fotos[0]?`<img src="${esc(p.fotos[0])}" alt="">`:""}</div>
         <div class="sn"><b>${esc(p.nome)}</b><small>${brl(p.preco)} · ${esc(p.categoria)} · ${p.fotos.length} foto${p.fotos.length===1?"":"s"}</small></div>
-        <span class="pill ${p.ativo?"ok":"off"}">${p.ativo?"No cardápio":"Desativado"}</span></summary>
+        <span class="pill ${p.ativo?"ok":"off"}">${p.ativo?"No cardápio":"Desativado"}</span>${p.ativo&&p.entregas_a_partir&&p.entregas_a_partir>hoje()?` <span class="pill warnp">Vendas a partir de ${U.ddmm(p.entregas_a_partir)}</span>`:""}</summary>
       <div class="body">
         <div class="f2">
           <div class="fl"><label for="pn_${id}">Nome</label><input class="input" id="pn_${id}" data-k="nome" value="${esc(p.nome)}" maxlength="80"></div>
@@ -876,6 +876,10 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
         <div class="fl"><span class="l">Dias de entrega</span>
           <div class="filters">${[...new Set(JANELAS.filter(j=>j.ativo).map(j=>j.dia_semana))].sort().map(d=>`<label class="chip" style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" data-dia="${d}" ${(p.dias_semana||[]).includes(d)?"checked":""}>${U.DIAS[d]}</label>`).join("")}</div>
           <span class="note">Nenhum marcado = sai em todos os dias de entrega. Ex: Cinnamon Roll só na sexta.</span></div>
+        <div class="fl"><label for="pz_${id}">Fechar vendas até (continua aparecendo no cardápio)</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input class="input" id="pz_${id}" data-k="entregas_a_partir" type="date" value="${p.entregas_a_partir||""}" style="max-width:200px">
+          <button class="small-btn" type="button" data-fecha-prox>Só a partir da próxima semana</button><button class="small-btn" type="button" data-fecha-limpa>Reabrir</button></div>
+          <span class="note">Coloque a primeira data em que o produto volta a ser entregue. Antes dela, o cliente vê o produto mas não consegue escolher datas anteriores. Vazio = vendendo normal.</span></div>
         <div class="fl"><span class="l">Fotos</span><div class="photos" id="ph_${id}"></div></div>
         <div class="fl" data-ficha><span class="l">Ficha técnica</span><span class="note">Salve o produto e abra de novo para ver a ficha.</span></div>
         <div class="fl"><span class="l">Opções (ex: tipo de pesto)</span><div id="og_${id}" style="display:flex;flex-direction:column;gap:8px"></div>
@@ -932,12 +936,23 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
       og.querySelectorAll("[data-gx]").forEach(b=>b.onclick=()=>{ st.opcoes.splice(+b.dataset.gx,1); drawOps(); });
     };
     box.querySelector("[data-addg]").onclick = () => { st.opcoes.push({ nome:"", obrigatorio:true, escolhas:[] }); drawOps(); };
+    // atalho: primeiro dia de entrega do produto na semana que vem
+    box.querySelector("[data-fecha-prox]").onclick = () => {
+      const dias = [...box.querySelectorAll("[data-dia]:checked")].map(i=>+i.dataset.dia);
+      const dow = U.parseData(hoje()).dow;
+      let d = U.somaDias(hoje(), ((8 - dow) % 7) || 7); // segunda-feira que vem
+      for (let k = 0; k < 7 && dias.length && !dias.includes(U.parseData(d).dow); k++) d = U.somaDias(d, 1);
+      box.querySelector('[data-k="entregas_a_partir"]').value = d;
+      toast(`Fechado até ${U.ddmm(d)}. Toque em Salvar.`);
+    };
+    box.querySelector("[data-fecha-limpa]").onclick = () => { box.querySelector('[data-k="entregas_a_partir"]').value = ""; toast("Toque em Salvar para reabrir."); };
     box.querySelector("[data-save]").onclick = async ev => {
       const g = k => box.querySelector(`[data-k="${k}"]`);
       const row = { nome:g("nome").value.trim()||"Sem nome", categoria:g("categoria").value.trim()||"Paninis", descricao:g("descricao").value.trim(),
         preco:Math.max(0, parseFloat(g("preco").value)||0), paes_por_unidade:Math.max(0, parseInt(g("paes_por_unidade").value,10)||0),
         ordem:parseInt(g("ordem").value,10)||0, ativo:g("ativo").checked, fotos:st.fotos,
         dias_semana:[...box.querySelectorAll("[data-dia]:checked")].map(i=>+i.dataset.dia),
+        entregas_a_partir:g("entregas_a_partir").value || null,
         opcoes:st.opcoes.filter(o=>o.nome.trim() && o.escolhas.length).map(o=>({ nome:o.nome.trim(), obrigatorio:!!o.obrigatorio, escolhas:o.escolhas })) };
       ev.target.disabled = true;
       const { data, error } = await sb.from("produtos").update(row).eq("id", p.id).select().single();

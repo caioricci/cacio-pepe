@@ -302,7 +302,7 @@
     $("cats").hidden = cats.length < 2;
     $("menu").innerHTML = cats.map((c,i)=>`<section class="sec" id="cat-${i}"><h2>${esc(c)}</h2>${
       PRODUTOS.filter(p=>p.categoria===c).map(p=>`<button type="button" class="prod" data-id="${p.id}">
-        <div><h3>${esc(p.nome)}</h3><p>${esc(p.descricao)}</p><div class="price">${OPC.aPartir(p)!=null?`<span class="apartir">a partir de</span> ${brl(OPC.aPartir(p))}`:brl(p.preco)}</div>${p.dias_semana?.length?`<span class="tag-dia">${esc(tagDias(p))}</span>`:""}</div>
+        <div><h3>${esc(p.nome)}</h3><p>${esc(p.descricao)}</p><div class="price">${OPC.aPartir(p)!=null?`<span class="apartir">a partir de</span> ${brl(OPC.aPartir(p))}`:brl(p.preco)}</div>${aPartir(p)?`<span class="tag-dia">Encomendas para ${U.DIAS_C[U.parseData(aPartir(p)).dow]} ${U.ddmm(aPartir(p))} em diante</span>`:p.dias_semana?.length?`<span class="tag-dia">${esc(tagDias(p))}</span>`:""}</div>
         <div class="thumb">${p.fotos.length?`<img src="${esc(p.fotos[0])}" alt="" loading="lazy">${p.fotos.length>1?`<span class="n">${p.fotos.length} fotos</span>`:""}`:`<div class="noimg">${esc(p.nome[0])}</div>`}</div>
       </button>`).join("")}</section>`).join("");
     document.querySelectorAll(".prod").forEach(b => b.onclick = () => abrirProduto(b.dataset.id));
@@ -317,7 +317,7 @@
     const fotos = p.fotos || [];
     $("pd-body").innerHTML = `
       ${fotos.length?`<div class="gallery"><div class="slides" id="slides">${fotos.map(f=>`<img src="${esc(f)}" alt="${esc(p.nome)}">`).join("")}</div>${fotos.length>1?`<div class="dots" id="dots">${fotos.map((_,i)=>`<span class="${i?"":"on"}"></span>`).join("")}</div>`:""}</div>`:""}
-      <div class="pd gutter"><h3 id="pd-title">${esc(p.nome)}</h3><p>${esc(p.descricao)}</p><div class="price" id="pd-preco">${OPC.aPartir(p)!=null?`<span class="apartir">a partir de</span> ${brl(OPC.aPartir(p))}`:brl(p.preco)}</div>${p.dias_semana?.length?`<span class="tag-dia">${esc(tagDias(p))}</span>`:""}</div>
+      <div class="pd gutter"><h3 id="pd-title">${esc(p.nome)}</h3><p>${esc(p.descricao)}</p><div class="price" id="pd-preco">${OPC.aPartir(p)!=null?`<span class="apartir">a partir de</span> ${brl(OPC.aPartir(p))}`:brl(p.preco)}</div>${aPartir(p)?`<span class="tag-dia">Encomendas para ${U.DIAS_C[U.parseData(aPartir(p)).dow]} ${U.ddmm(aPartir(p))} em diante</span>`:p.dias_semana?.length?`<span class="tag-dia">${esc(tagDias(p))}</span>`:""}</div>
       ${(p.opcoes||[]).map((g,gi)=>`<div class="group gutter" role="radiogroup" aria-labelledby="g-${gi}">
         <div class="group-h"><div><b id="g-${gi}">${esc(g.nome)}</b><small>Escolha 1 opção</small></div>${g.obrigatorio?`<span class="req" id="req-${gi}">Obrigatório</span>`:""}</div>
         ${(g.escolhas||[]).map((e,ei)=>`<label class="choice"><span>${esc(OPC.nome(e))}${OPC.preco(e)!=null?`<small class="cpreco">${brl(OPC.preco(e))}${OPC.unid(e)>1?` · ${brl(OPC.preco(e)/OPC.unid(e))} cada`:""}</small>`:""}</span><input type="radio" name="g${gi}" id="g${gi}-${ei}" value="${esc(OPC.nome(e))}" data-g="${gi}"></label>`).join("")}
@@ -417,7 +417,10 @@
   function diasFrase(ds){ return ds.slice().sort().map(d => (d===0||d===6 ? "aos " : "às ") + U.DIAS[d] + "s").join(" e ").replace(/ e (aos|às) /g, " e "); }
   // dias em que todos os itens do carrinho podem ser entregues (null = qualquer dia)
   function restricoes(){ return cart.map(l => prod(l.produto_id)).filter(p => p && p.dias_semana?.length); }
-  function slotCompat(s){ return restricoes().every(p => p.dias_semana.includes(s.dia_semana)) && (!s.cidades?.length || ck.modo === "Entrega"); }
+  const aPartir = p => p.entregas_a_partir && p.entregas_a_partir > U.hojeSP() ? p.entregas_a_partir : null;
+  function slotCompat(s){ return restricoes().every(p => p.dias_semana.includes(s.dia_semana))
+    && cart.every(l => { const p = prod(l.produto_id); const a = p && aPartir(p); return !a || s.data >= a; })
+    && (!s.cidades?.length || ck.modo === "Entrega"); }
   // horários regionais (ex: sábado só para Rio Claro e Piracicaba)
   const nrm = t => U.semAcento(t).toLowerCase().trim();
   const cidadesTxt = s => s.cidades.join(" e ");
@@ -541,6 +544,7 @@
         <p class="sub">Só aparecem as datas com encomendas abertas${paes()?` e pão para o seu pedido (${paes()} ${paes()>1?"ciabattas":"ciabatta"})`:""}.</p>
         ${restr.length?`<div class="frete dica">${restr.map(p=>`<b>${esc(p.nome)}</b> sai só ${diasFrase(p.dias_semana)}`).join("; ")}, por isso só aparecem esses dias.</div>`:""}
         ${CFG.vendas_pausadas||!SLOTS.length?`<p class="err">Não há datas abertas agora. Volte mais tarde ou fale com a gente no WhatsApp.</p>`:
+        !SLOTS_OK.length&&cart.some(l=>aPartir(prod(l.produto_id)||{}))?`<p class="err">${esc(cart.map(l=>prod(l.produto_id)).filter(p=>p&&aPartir(p)).map(p=>`${p.nome} só a partir de ${U.ddmm(aPartir(p))}`).join("; "))}, e essas datas ainda não abriram. Tire do carrinho ou volte mais perto da data.</p>`:
         !SLOTS_OK.length?`<p class="err">Não há ${diasFrase([...new Set(restr.flatMap(p=>p.dias_semana))]).replace(/^(às|aos) /,"")} abertas agora. Tire do carrinho o que só sai nesse dia ou fale com a gente no WhatsApp.</p>`:
         `<div class="days">${diasVisiveis.map(([d,ss],i)=>`<div class="day"><h4>${!ck.maisDatas&&i===0&&diasLista[iPrimeiro][0]===d?`<span class="prox">Próxima data</span> `:""}${U.diaLongo(d)}</h4><div class="slots">${ss.map(s=>{const k=s.data+"|"+s.janela_id; const inf=slotInfo(s); return `
           <button type="button" class="opt slot" data-slot="${k}" aria-pressed="${ck.slot===k}" ${inf.ok?"":"disabled"}>

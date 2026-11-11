@@ -506,7 +506,7 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
     const k = `${j.data}|${j.janela_id}`; const id = k.replace(/[^a-z0-9]/gi,"_");
     const pct = j.capacidade ? Math.min(100, Math.round(j.reservados/j.capacidade*100)) : 100;
     const n = (v)=> v==null?"":v;
-    return `<form class="card" data-j="${esc(k)}">
+    return `<form class="card" data-j="${esc(k)}" data-res="${j.reservados}">
       <div class="jh"><div><b>${esc(j.turno)}</b><small>${j.horario?esc(j.horario)+" · ":""}corte ${U.quando(j.corte)} ${U.hora(j.corte)}</small></div>${statusJanela(j)}</div>
       <div class="meter ${j.livres<=0?"full":""}"><span style="width:${pct}%"></span></div>
       <div class="mtxt"><span><b>${j.reservados}</b> reservados</span><span><b>${j.livres}</b> livres de ${j.capacidade}</span></div>
@@ -517,7 +517,10 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
         <div class="fl"><label for="ds_${id}">Descartados</label><input class="input" id="ds_${id}" name="ds" type="number" min="0" inputmode="numeric" value="${j.paes_descartados||""}" placeholder="0"></div>
       </div>
       <div class="fl"><label for="et_${id}">Etapa da massa</label><select class="input" id="et_${id}" name="et">${ETAPAS.map(([v,l])=>`<option value="${v}" ${j.etapa===v?"selected":""}>${l}</option>`).join("")}</select></div>
-      <label class="toggle"><span>Liberar vendas extras<small>Depois do corte, vende os pães livres.</small></span><input type="checkbox" name="ex" ${j.vendas_extras?"checked":""}></label>
+      <label class="toggle"><span>Liberar vendas extras<small>Depois do corte, vende só a quantidade que você colocar abaixo.</small></span><input type="checkbox" name="ex" ${j.vendas_extras?"checked":""}></label>
+      <div class="fl extra-q"><label for="xq_${id}">Pães para vender a mais</label>
+        <div style="display:flex;gap:8px;align-items:center"><input class="input" id="xq_${id}" name="xq" type="number" min="0" inputmode="numeric" value="${j.vendas_extras?Math.max(0,j.livres):""}" placeholder="Ex: 1" style="max-width:110px">
+        <span class="note">${j.reservados} já reservado${j.reservados===1?"":"s"}. Com 1 aqui, o site vende só mais 1 pão.</span></div></div>
       <label class="toggle"><span>Bloquear este horário<small>Para de vender sem cancelar pedidos.</small></span><input type="checkbox" name="bl" ${j.bloqueado?"checked":""}></label>
       <div class="fl"><label for="an_${id}">Anotação</label><input class="input" id="an_${id}" name="an" maxlength="200" value="${esc(j.anotacao)}" placeholder="Ex: forno 2 em manutenção"></div>
       <div class="row-act"><span class="saved" hidden>Salvo</span><button class="btn btn-primary" type="submit">Salvar</button></div>
@@ -527,6 +530,11 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
     e.preventDefault();
     const f = e.target; const [data, janela_id] = f.dataset.j.split("|");
     const num = v => v.trim()==="" ? null : Math.max(0, parseInt(v,10)||0);
+    // "pães para vender a mais": a capacidade vira reservados + essa quantidade
+    const reservados = Number(f.closest("form").dataset.res || 0);
+    const xq = f.xq.value.trim() === "" ? null : Math.max(0, parseInt(f.xq.value, 10) || 0);
+    if (f.ex.checked && xq != null) f.ap.value = String(reservados + xq);
+    if (f.ex.checked && xq == null) { toast("Coloque quantos pães quer vender a mais."); f.xq.focus(); return; }
     const row = { data, janela_id, paes_planejados:num(f.pl.value), paes_aprovados:num(f.ap.value), paes_descartados:num(f.ds.value)||0,
       etapa:f.et.value, vendas_extras:f.ex.checked, bloqueado:f.bl.checked, anotacao:f.an.value.trim(), atualizado_em:new Date().toISOString() };
     const btn = f.querySelector("button[type=submit]"); btn.disabled = true;

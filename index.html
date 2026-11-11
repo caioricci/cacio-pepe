@@ -810,10 +810,28 @@
   document.addEventListener("keydown", e => { if(e.key==="Escape"){ if(!$("pd-scrim").hidden) fechar("pd-scrim"); else if(!$("ck-scrim").hidden) fechar("ck-scrim"); } });
 
   carregar();
-  // voltou do link de pagamento da InfinitePay
+  // voltou do link de pagamento da InfinitePay: confirma e leva pro WhatsApp avisar
   (() => { const q = new URLSearchParams(location.search); const n = q.get("pago");
-    if (n && /^\d+$/.test(n)) { setTimeout(() => { toast(`Pagamento do pedido #${n} recebido. Obrigado! 🧡`); toast._t && clearTimeout(toast._t); toast._t = setTimeout(()=>$("toast").hidden=true, 6000); }, 600);
-      try { history.replaceState(null, "", location.pathname); } catch(e) {} } })();
+    if (!n || !/^\d+$/.test(n)) return;
+    try { history.replaceState(null, "", location.pathname); } catch(e) {}
+    const mostrar = () => {
+      if (!CFG) return setTimeout(mostrar, 300);
+      const wa = `https://wa.me/${CFG.whatsapp}?text=${encodeURIComponent(`Oi! Acabei de pagar o pedido *#${n}* pelo link ✅`)}`;
+      ck.finalizado = true; $("ck-title").textContent = "Pagamento";
+      $("ck-body").innerHTML = `<div class="gutter done">
+        <div class="num">#${n}</div>
+        <h3>Pagamento confirmado ✅</h3>
+        <p>Obrigado! O pagamento já chegou pra gente, não precisa mandar comprovante.</p>
+        <p class="sub" id="pg-auto">Abrindo o WhatsApp para você avisar a gente…</p>
+        <a class="btn btn-primary" href="${esc(wa)}" id="pg-wa">Avisar no WhatsApp</a>
+        <button class="btn btn-ghost" type="button" data-close>Voltar ao cardápio</button>
+      </div>`;
+      $("ck-foot").hidden = true; abrir("ck-scrim");
+      $("ck-body").querySelector("[data-close]").onclick = () => fechar("ck-scrim");
+      setTimeout(() => { if (!$("ck-scrim").hidden && $("pg-wa")) location.href = wa; }, 2500);
+    };
+    mostrar();
+  })();
   setInterval(atualizarAgenda, 60000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) atualizarAgenda(); });
 })();

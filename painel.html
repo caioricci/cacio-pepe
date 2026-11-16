@@ -111,6 +111,7 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
 .combo{background:var(--pistache);color:var(--on-pistache);border-radius:var(--r-sm);padding:6px 10px;font-size:14px}
 .nota{border-left:3px solid var(--line);padding:2px 10px;font-size:13px;color:var(--muted);font-style:italic}
 .btn-wa,.ped a.btn-wa{background:#1F8F4E;color:#fff;text-decoration:none}
+.sim-res{margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--paper);line-height:1.5}
 .linkpg{border-top:1px dashed var(--line);margin-top:10px;padding-top:10px;display:flex;flex-direction:column;gap:8px}
 .avisos{background:color-mix(in srgb,var(--mortadela) 22%,var(--surface));border-radius:12px;padding:10px 14px;margin:0 0 12px;font-size:14px}
 .avisos ul{margin:6px 0 0;padding-left:18px}
@@ -547,7 +548,8 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
   // ---------- PEDIDOS ----------
   const STATUS = { aguardando:"Aguardando", confirmado:"Confirmado", entregue:"Entregue", cancelado:"Cancelado" };
   const CANAIS = { site:"Site", whatsapp:"WhatsApp", instagram:"Instagram", presencial:"Presencial", outro:"Outro" };
-  let pedEdit = null, novoAberto = false, PEDS_LISTA = [], colarAberto = false, colarTexto = "", PRE = null;
+  let pedEdit = null, novoAberto = false, PEDS_LISTA = [], colarAberto = false, colarTexto = "", PRE = null, simAberto = false;
+  const simDados = { cep:"", numero:"", livre:"", janela_id:"" };
   const jTurno = id => JANELAS.find(j=>j.id===id)?.turno || id;
   const janelasDoDia = d => d ? JANELAS.filter(j => j.ativo && j.dia_semana === U.parseData(d).dow) : [];
   const pagsTodas = () => [...new Set([...(CFG.pix_chave?["Pix"]:[]), "Pix", ...CFG.pagamentos])];
@@ -563,6 +565,69 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
     const data = `${U.diaLongo(p.data)}, ${jTurno(p.janela_id).toLowerCase()}`;
     return (CFG.msg_recuperacao||"").replace(/\{nome\}/g, (p.nome||"").split(" ")[0]).replace(/\{data\}/g, data)
       .replace(/\{itens\}/g, itens).replace(/\{total\}/g, brl(p.total));
+  }
+
+  // ---------- frete: mesma conta do site (distância da loja, mínimo, regras de grátis) ----------
+  let REGRAS_GRATIS = null;
+  async function regrasGratis(){
+    if (!REGRAS_GRATIS) {
+      const { data } = await sb.from("frete_gratis").select("*").eq("ativo", true).order("ordem");
+      REGRAS_GRATIS = data || [];
+      for (const g of REGRAS_GRATIS) if (g.lat == null && g.endereco && g.raio_km != null) { const c = await GEO.coords({ livre:g.endereco }); if (c) { g.lat = c.lat; g.lng = c.lng; } }
+    }
+    return REGRAS_GRATIS;
+  }
+  const nrmTxt = t => U.semAcento(t).toLowerCase().replace(/\s+/g," ").trim();
+  // entrada: { cep, numero } ou { livre: "endereço digitado" }; janela_id opcional (regras como a da PUC dependem do turno)
+  async function simularFrete({ cep="", numero="", livre="", janela_id="" }){
+    let c = String(cep).replace(/\D/g,"");
+    if (!c && livre) c = (livre.match(/\b(\d{5})-?(\d{3})\b/)||[]).slice(1).join("");
+    const r = { cep:c, rua:"", bairro:"", cidade:"", km:null, taxa:null, gratis:null, gratisOutro:null, fora:false, achou:false, regional:null };
+    let v = null;
+    if (c.length === 8) { v = await GEO.cep(c); if (v) { r.rua = v.logradouro; r.bairro = v.bairro; r.cidade = v.localidade; } }
+    const cli = livre ? (await GEO.coords({ livre }) || (v ? await GEO.coords({ rua:v.logradouro, numero, cidade:v.localidade, uf:v.uf, cep:c }) : null))
+                      : (v ? await GEO.coords({ rua:v.logradouro, numero, cidade:v.localidade, uf:v.uf, cep:c }) : null);
+    r.achou = !!cli;
+    // horário regional (ex: sábado Rio Claro/Piracicaba): frete próprio
+    const jan = JANELAS.find(j => j.id === janela_id);
+    if (jan?.cidades?.length) { r.regional = jan; r.taxa = jan.taxa_fixa != null ? Number(jan.taxa_fixa) : null; return r; }
+    const texto = nrmTxt(`${livre} ${r.bairro}`);
+    const bate = g => (r.bairro && (g.bairros||[]).some(b => nrmTxt(b) === nrmTxt(r.bairro)))
+      || (livre && (g.bairros||[]).some(b => new RegExp(`(^|[^a-z])${nrmTxt(b).replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}([^a-z]|$)`).test(texto)))
+      || (c && (g.ceps||[]).includes(c))
+      || (cli && g.lat != null && g.raio_km != null && GEO.linhaReta(cli, { lat:g.lat, lng:g.lng }) <= Number(g.raio_km));
+    const regras = await regrasGratis();
+    r.gratis = regras.find(g => bate(g) && (!(g.janelas||[]).length || (janela_id && g.janelas.includes(janela_id)))) || null;
+    if (!r.gratis) r.gratisOutro = regras.find(g => bate(g) && (g.janelas||[]).length) || null;
+    if (r.gratis) { r.taxa = 0; }
+    if (CFG.frete_modo === "fixo") { if (!r.gratis) r.taxa = Number(CFG.taxa_entrega||0); return r; }
+    const loja = CFG.loja_lat != null ? { lat:Number(CFG.loja_lat), lng:Number(CFG.loja_lng) } : null;
+    if (loja && cli) {
+      r.km = await GEO.km(loja, cli);
+      r.fora = Number(CFG.frete_raio_km) > 0 && r.km > Number(CFG.frete_raio_km);
+      if (!r.gratis) r.taxa = Math.ceil(Math.max(Number(CFG.frete_min), Number(CFG.frete_base) + Number(CFG.frete_km) * Math.round(r.km*10)/10) * 2) / 2;
+    }
+    return r;
+  }
+  const kmTxt = km => km.toFixed(1).replace(".",",") + " km";
+  const nomeJan = id => { const j = JANELAS.find(x=>x.id===id); return j ? `${U.DIAS[j.dia_semana]} ${j.turno.toLowerCase()}` : id; };
+  function freteResumo(r){
+    if (r.regional) return r.taxa != null ? `Frete fixo desse horário: <b>${brl(r.taxa)}</b>` : `Horário de ${esc(r.regional.cidades.join(" e "))}: frete a combinar (sem valor fixo em Ajustes).`;
+    if (!r.achou && r.km == null && !r.gratis) return `<span style="color:var(--danger)">Não achei esse endereço no mapa.</span> Confira o CEP e o número.`;
+    const local = [r.rua, r.bairro, r.cidade].filter(Boolean).join(", ");
+    let t = local ? `${esc(local)}<br>` : "";
+    if (r.gratis) t += `<b>Entrega grátis</b> · ${esc(r.gratis.nome)}${r.km!=null?` (${kmTxt(r.km)})`:""}`;
+    else if (r.taxa != null) t += `Frete: <b>${brl(r.taxa)}</b>${r.km!=null?` (${kmTxt(r.km)})`:""}`;
+    if (r.fora) t += ` <b style="color:var(--danger)">· fora da área (até ${String(CFG.frete_raio_km).replace(".",",")} km)</b>`;
+    if (r.gratisOutro) t += `<br><span class="note">Grátis nesse endereço em: ${esc((r.gratisOutro.janelas||[]).map(nomeJan).join(" e "))}.</span>`;
+    return t;
+  }
+  function freteMsg(r){
+    const local = [r.rua, r.bairro].filter(Boolean).join(", ") || "o seu endereço";
+    if (r.gratis) return `Oi! A entrega para ${local} é grátis 😊`;
+    if (r.regional) return r.taxa != null ? `Oi! A entrega fica ${brl(r.taxa)}.` : "";
+    if (r.taxa == null) return "";
+    return `Oi! A entrega para ${local} fica ${brl(r.taxa)}${r.km!=null?` (${kmTxt(r.km)} daqui)`:""}.${r.gratisOutro?` Se for ${(r.gratisOutro.janelas||[]).map(nomeJan).join(" ou ")}, a entrega é grátis.`:""}`;
   }
 
   // mensagem da loja para o cliente com o pedido completo (quando ele não mandou o WhatsApp, ou para confirmar)
@@ -615,8 +680,19 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
     Object.values(grupos).forEach(ps => ps.sort((a,b)=> ordem[a.status]-ordem[b.status] || (a.status==="aguardando" ? new Date(a.criado_em)-new Date(b.criado_em) : a.numero-b.numero)));
     const parados = data.filter(p=>p.status==="aguardando").length;
     el.innerHTML = `
-      <div class="bar"><h2>Pedidos</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-ghost" type="button" id="btn-colar">${colarAberto?"Fechar":"Colar pedido"}</button><button class="btn btn-primary" type="button" id="btn-novo">${novoAberto?"Fechar":"Novo pedido avulso"}</button></div></div>
+      <div class="bar"><h2>Pedidos</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-ghost" type="button" id="btn-sim">${simAberto?"Fechar":"Simular frete"}</button><button class="btn btn-ghost" type="button" id="btn-colar">${colarAberto?"Fechar":"Colar pedido"}</button><button class="btn btn-primary" type="button" id="btn-novo">${novoAberto?"Fechar":"Novo pedido avulso"}</button></div></div>
       <div class="filters">${filtros.map(([v,l])=>`<button class="chip" type="button" data-f="${v}" aria-pressed="${pedFiltro===v}">${l}${v==="aguardando"&&parados?` (${parados})`:""}</button>`).join("")}</div>
+      ${simAberto?`<div class="card" id="sim">
+        <div class="jh"><b>Simular frete</b></div>
+        <div class="f3">
+          <div class="fl"><label for="sim-cep">CEP</label><input class="input" id="sim-cep" inputmode="numeric" maxlength="9" placeholder="13010-000" value="${esc(simDados.cep)}"></div>
+          <div class="fl"><label for="sim-num">Número</label><input class="input" id="sim-num" inputmode="numeric" maxlength="10" value="${esc(simDados.numero)}"></div>
+          <div class="fl"><label for="sim-jan">Turno (opcional)</label><select class="input" id="sim-jan"><option value="">Qualquer</option>${JANELAS.filter(j=>j.ativo).map(j=>`<option value="${esc(j.id)}" ${simDados.janela_id===j.id?"selected":""}>${esc(nomeJan(j.id))}</option>`).join("")}</select></div>
+        </div>
+        <div class="fl"><label for="sim-livre">Ou cole o endereço</label><input class="input" id="sim-livre" maxlength="200" placeholder="Rua, número, bairro, cidade" value="${esc(simDados.livre)}"></div>
+        <div class="row-act"><button class="btn btn-primary" type="button" id="sim-go">Calcular</button></div>
+        <div id="sim-res" class="sim-res" hidden></div>
+      </div>`:""}
       ${colarAberto?`<div class="card" id="colar">
         <div class="jh"><b>Colar pedido</b></div>
         <p class="note" style="margin:0 0 8px">Cole a mensagem que o cliente mandou: pedido do Goomer, do site ou texto livre do WhatsApp. O sistema preenche o pedido e você confere antes de lançar.</p>
@@ -629,6 +705,20 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
         return `<div class="day-h">${U.diaLongo(d)} · ${esc(jTurno(j))} <span class="note">— ${ps.length} pedido${ps.length>1?"s":""}, ${brl(tot)}</span></div><div class="grid">${ps.map(p=> pedEdit===p.id ? `<form class="card" data-edit="${p.id}">${formPedidoHTML(p)}</form>` : cardPedido(p)).join("")}</div>`;}).join("")
         :`<p class="empty">Nenhum pedido nesse filtro.</p>`}`;
     $("btn-novo").onclick = () => { novoAberto = !novoAberto; pedEdit = null; PRE = null; renderPedidos(); };
+    $("btn-sim").onclick = () => { simAberto = !simAberto; renderPedidos(); if (simAberto) setTimeout(()=>$("sim-cep")?.focus(), 50); };
+    if (simAberto) {
+      ["cep","num","livre","jan"].forEach(k => $("sim-"+k).oninput = $("sim-"+k).onchange = () => { simDados.cep=$("sim-cep").value; simDados.numero=$("sim-num").value; simDados.livre=$("sim-livre").value; simDados.janela_id=$("sim-jan").value; });
+      $("sim-go").onclick = async () => {
+        const b = $("sim-go"), out = $("sim-res");
+        if (!simDados.livre.trim() && simDados.cep.replace(/\D/g,"").length !== 8) { toast("Coloque o CEP (8 números) ou cole o endereço."); return; }
+        b.disabled = true; b.textContent = "Calculando…"; out.hidden = false; out.innerHTML = `<span class="note">Calculando…</span>`;
+        const r = await simularFrete({ cep:simDados.cep, numero:simDados.numero, livre:simDados.livre.trim(), janela_id:simDados.janela_id });
+        b.disabled = false; b.textContent = "Calcular";
+        const msg = freteMsg(r);
+        out.innerHTML = `<div>${freteResumo(r)}</div>${msg?`<div class="acts" style="margin-top:10px"><button class="btn btn-ghost" type="button" id="sim-copy">Copiar resposta</button></div><p class="note" style="margin:6px 0 0">${esc(msg)}</p>`:""}`;
+        $("sim-copy")?.addEventListener("click", async () => { try { await navigator.clipboard.writeText(msg); toast("Resposta copiada"); } catch(e) { toast("Não deu para copiar"); } });
+      };
+    }
     $("btn-colar").onclick = () => { colarAberto = !colarAberto; renderPedidos(); if (colarAberto) setTimeout(()=>$("colar-txt")?.focus(), 50); };
     if (colarAberto) {
       $("colar-txt").oninput = e => colarTexto = e.target.value;
@@ -703,10 +793,16 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
   }
 
   // formulário único: novo pedido avulso (p = null) ou edição de um pedido
+  // pedidos antigos podem não ter o id do produto: acha pelo nome
+  const pidDe = it => it.produto_id || PRODS.find(x => x.nome === it.nome)?.id || "";
   function formPedidoHTML(p){
     const n = !p; const id = n ? "novo" : p.id.slice(0,8);
     const d = p?.data || "";
-    const linhasItens = PRODS.filter(x=>x.ativo || n===false).flatMap(pr => {
+    // itens do pedido que não cabem nas linhas padrão (ex: opções de mais de um grupo): viram linhas próprias com o preço original
+    const padrao = new Set(PRODS.flatMap(pr => { const g=(pr.opcoes||[])[0]; return (g&&g.escolhas?.length ? g.escolhas.map(e=>`${g.nome}: ${OPC.nome(e)}`) : [""]).map(op=>pr.id+"|"+op); }));
+    const extrasItens = (p?.itens||[]).filter(i => !padrao.has(pidDe(i)+"|"+(i.opcao||""))).map(i => `<div class="it-row"><span>${esc(i.nome)}${i.opcao?` <small>${esc(i.opcao)}</small>`:""} <small>${brl(i.preco)}</small></span>
+        <input class="input it-q" type="number" min="0" max="50" inputmode="numeric" value="0" data-pid="${esc(pidDe(i)||"")}" data-op="${esc(i.opcao||"")}" data-preco="${Number(i.preco)}" data-unid="${Number(i.unidades)||1}" data-nome="${esc(i.nome)}"></div>`).join("");
+    const linhasItens = PRODS.filter(x=>x.ativo || n===false || p?.itens?.some(i=>i.produto_id===x.id)).flatMap(pr => {
       const g = (pr.opcoes||[])[0]; const ops = g && g.escolhas?.length ? g.escolhas.map(e=>`${g.nome}: ${OPC.nome(e)}`) : [""];
       return ops.map(op => `<div class="it-row"><span>${esc(pr.nome)}${op?` <small>${esc(op.split(": ")[1])}</small>`:""} <small>${brl(OPC.linha(pr, op).preco)}</small></span>
         <input class="input it-q" type="number" min="0" max="50" inputmode="numeric" value="0" data-pid="${pr.id}" data-op="${esc(op)}" aria-label="Quantidade ${esc(pr.nome)} ${esc(op)}"></div>`);
@@ -724,14 +820,13 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
         <div class="fl"><label for="pf-hora-${id}">Horário combinado</label><input class="input" id="pf-hora-${id}" name="horario_combinado" maxlength="40" placeholder="Ex: 12h40" value="${esc(p?.horario_combinado||"")}"></div>
       </div>
       <div class="cap note" data-cap></div>
-      ${n?`<div class="fl"><span class="l">Itens</span><div class="it-list">${linhasItens}</div></div>`:
-        `<div class="fl"><span class="l">Itens</span><div class="note">${p.itens.map(i=>`${i.qtd}× ${esc(i.nome)}${i.opcao?` (${esc(i.opcao)})`:""}`).join(" · ")}. Para mudar os itens, cancele e lance um novo.</div></div>`}
+      <div class="fl"><span class="l">Itens</span><div class="it-list">${linhasItens}${extrasItens}</div></div>
       <div class="f3">
         <div class="fl"><label for="pf-modo-${id}">Recebimento</label><select class="input" id="pf-modo-${id}" name="modo">${["Entrega","Retirada"].map(m=>`<option ${(p?.modo||"Entrega")===m?"selected":""}>${m}</option>`).join("")}</select></div>
-        <div class="fl" data-ent><label for="pf-taxa-${id}">Taxa de entrega (R$)</label><input class="input" id="pf-taxa-${id}" name="taxa_entrega" type="number" step="0.5" min="0" value="${p?Number(p.taxa_entrega):0}"></div>
+        <div class="fl" data-ent><label for="pf-taxa-${id}">Taxa de entrega (R$)</label><div style="display:flex;gap:6px"><input class="input" id="pf-taxa-${id}" name="taxa_entrega" type="number" step="0.5" min="0" value="${p?Number(p.taxa_entrega):0}"><button class="small-btn" type="button" data-calc-frete>Calcular</button></div></div>
         <div class="fl"><label for="pf-pag-${id}">Pagamento</label><select class="input" id="pf-pag-${id}" name="pagamento">${pagsTodas().map(f=>`<option ${p?.pagamento===f?"selected":""}>${esc(f)}</option>`).join("")}</select></div>
       </div>
-      <div class="fl" data-ent><label for="pf-end-${id}">Endereço de entrega</label><textarea class="input" id="pf-end-${id}" name="endereco" maxlength="300">${esc(p?.endereco||"")}</textarea></div>
+      <div class="fl" data-ent><label for="pf-end-${id}">Endereço de entrega</label><textarea class="input" id="pf-end-${id}" name="endereco" maxlength="300" placeholder="Rua, número – bairro, cidade – CEP">${esc(p?.endereco||"")}</textarea><div class="note" data-frete-res></div></div>
       <div class="f2">
         <div class="fl"><label for="pf-obs-${id}">Observação do cliente</label><input class="input" id="pf-obs-${id}" name="obs" maxlength="500" value="${esc(p?.obs||"")}"></div>
         <div class="fl"><label for="pf-nota-${id}">Nota interna (só vocês veem)</label><input class="input" id="pf-nota-${id}" name="nota_interna" maxlength="500" placeholder="Ex: Uber Moto pedido às 12h20" value="${esc(p?.nota_interna||"")}"></div>
@@ -763,9 +858,16 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
         if (inp) inp.value = (parseInt(inp.value,10)||0) + it.q;
       }
     }
-    const itensDoForm = () => [...f.querySelectorAll(".it-q")].map(i => ({ pr: PRODS.find(x=>x.id===i.dataset.pid), op: i.dataset.op, q: Math.max(0, parseInt(i.value,10)||0) })).filter(x=>x.q>0 && x.pr);
-    const subtotal = () => n ? itensDoForm().reduce((a,x)=>a+x.q*OPC.linha(x.pr, x.op).preco,0) : Number(p.subtotal);
-    const paesDoForm = () => n ? itensDoForm().reduce((a,x)=>a+x.q*(x.pr.paes_por_unidade??1)*OPC.linha(x.pr, x.op).unid,0) : p.paes;
+    if (!n) for (const it of p.itens) {
+      const inp = [...f.querySelectorAll(".it-q")].find(i => i.dataset.pid===pidDe(it) && i.dataset.op===(it.opcao||"") && (i.dataset.nome==null || i.dataset.nome===it.nome))
+               || [...f.querySelectorAll(".it-q")].find(i => i.dataset.pid===pidDe(it) && i.dataset.op===(it.opcao||""));
+      if (inp) { inp.value = (parseInt(inp.value,10)||0) + Number(it.qtd); inp.dataset.preco = Number(it.preco); inp.dataset.unid = Number(it.unidades)||1; inp.dataset.nome = it.nome; }
+    }
+    // preço e unidades: linha própria (data-preco) mantém o valor original; o resto segue o cardápio atual
+    const linhaDe = i => { const pr = PRODS.find(x=>x.id===i.dataset.pid); const l = i.dataset.preco != null ? { preco:Number(i.dataset.preco), unid:Number(i.dataset.unid)||1 } : OPC.linha(pr, i.dataset.op); return { pr, l }; };
+    const itensDoForm = () => [...f.querySelectorAll(".it-q")].map(i => { const { pr, l } = linhaDe(i); return { pr, pid: i.dataset.pid, op: i.dataset.op, q: Math.max(0, parseInt(i.value,10)||0), preco:l.preco, unid:l.unid, nome: pr?.nome || i.dataset.nome }; }).filter(x=>x.q>0 && (x.pr || x.nome));
+    const subtotal = () => itensDoForm().reduce((a,x)=>a+x.q*x.preco,0);
+    const paesDoForm = () => itensDoForm().reduce((a,x)=>a+x.q*((x.pr?.paes_por_unidade)??1)*x.unid,0);
     let capInfo = null;
     const preencherTurnos = () => {
       const js = janelasDoDia(g("data").value);
@@ -783,7 +885,7 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
       const ent = g("modo").value === "Entrega";
       f.querySelectorAll("[data-ent]").forEach(e => e.hidden = !ent);
       const taxa = ent ? Math.max(0, parseFloat(g("taxa_entrega").value)||0) : 0;
-      f.querySelector("[data-total]").textContent = `Total: ${brl(subtotal()+taxa)}${n?` · ${paesDoForm()} ciabatta${paesDoForm()===1?"":"s"}`:""}`;
+      f.querySelector("[data-total]").textContent = `Total: ${brl(subtotal()+taxa)} · ${paesDoForm()} ciabatta${paesDoForm()===1?"":"s"}`;
       const box = f.querySelector("[data-cap]");
       if (capInfo) {
         const proprio = (!n && p.status!=="cancelado" && p.data===g("data").value && p.janela_id===g("janela_id").value) ? p.paes : 0;
@@ -799,6 +901,17 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
     f.addEventListener("input", atualizar);
     f.querySelector("[data-cancel]")?.addEventListener("click", () => { pedEdit = null; renderPedidos(); });
     verCapacidade(); atualizar();
+    let ultimoFrete = null;
+    f.querySelector("[data-calc-frete]").onclick = async ev => {
+      const b = ev.currentTarget, out = f.querySelector("[data-frete-res]"), end = g("endereco").value.trim();
+      if (end.length < 8) { toast("Preencha o endereço (com CEP de preferência)."); g("endereco").focus(); return; }
+      b.disabled = true; b.textContent = "…"; out.innerHTML = "Calculando…";
+      const r = await simularFrete({ livre:end, janela_id:g("janela_id").value });
+      b.disabled = false; b.textContent = "Calcular";
+      out.innerHTML = freteResumo(r);
+      if (r.taxa != null) { g("taxa_entrega").value = r.taxa; atualizar(); }
+      ultimoFrete = r;
+    };
 
     f.onsubmit = async e => {
       e.preventDefault();
@@ -812,19 +925,22 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
         obs:g("obs").value.trim(), nota_interna:g("nota_interna").value.trim(), atualizado_em:new Date().toISOString() };
       const btn = f.querySelector("button[type=submit]"); btn.disabled = true;
       let error;
+      const its = itensDoForm();
+      if (!its.length) { toast("Coloque pelo menos um item."); btn.disabled=false; return; }
+      const obsDe = x => (!n && p.itens.find(i => pidDe(i)===x.pid && (i.opcao||"")===x.op)?.obs) || "";
+      const itens = its.map(x=>({ produto_id:x.pid || null, nome:x.nome, opcao:x.op, qtd:x.q, preco:x.preco, unidades:x.unid, obs:obsDe(x) }));
+      const sub = subtotal();
       if (n) {
-        const its = itensDoForm();
-        if (!its.length) { toast("Coloque pelo menos um item."); btn.disabled=false; return; }
-        const itens = its.map(x=>({ produto_id:x.pr.id, nome:x.pr.nome, opcao:x.op, qtd:x.q, preco:OPC.linha(x.pr, x.op).preco, unidades:OPC.linha(x.pr, x.op).unid, obs:"" }));
-        const sub = subtotal();
         ({ error } = await sb.from("pedidos").insert({ ...comum, canal:g("canal").value, itens, paes:paesDoForm(), subtotal:sub, total:sub+taxa,
           status:g("status").value, pago:g("pago").checked, tipo:"regular", ...(pre?.troco ? { troco:pre.troco } : {}) }));
       } else {
-        ({ error } = await sb.from("pedidos").update({ ...comum, total:Number(p.subtotal)+taxa, frete_gratis: taxa>0 ? "" : p.frete_gratis, frete_combinar: ent && taxa===0 && p.frete_combinar }).eq("id", p.id));
+        ({ error } = await sb.from("pedidos").update({ ...comum, itens, paes:paesDoForm(), subtotal:sub, total:sub+taxa,
+          frete_gratis: taxa>0 ? "" : (ultimoFrete?.gratis?.nome || p.frete_gratis || ""), ...(ultimoFrete?.km!=null ? { km:Math.round(ultimoFrete.km*10)/10 } : {}), frete_combinar: ent && taxa===0 && p.frete_combinar }).eq("id", p.id));
       }
       btn.disabled = false;
       if (error) { toast(U.erro(error)); return; }
-      toast(n ? "Pedido lançado" : "Pedido atualizado");
+      const dif = !n && p.pago ? Math.round((sub + taxa - Number(p.total)) * 100) / 100 : 0;
+      toast(n ? "Pedido lançado" : dif > 0 ? `Pedido atualizado. Já estava pago: falta cobrar ${brl(dif)}.` : dif < 0 ? `Pedido atualizado. Já estava pago: devolver ${brl(-dif)}.` : "Pedido atualizado");
       novoAberto = false; pedEdit = null; PRE = null; renderPedidos();
     };
   }

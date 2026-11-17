@@ -184,7 +184,7 @@
   .fid-btn{margin-top:14px;display:inline-flex;align-items:center;gap:10px;background:transparent;color:var(--ouro-1);border:1px solid rgba(217,180,95,.6);border-radius:999px;padding:7px 18px 7px 7px;font:inherit;font-weight:600;font-size:14px;cursor:pointer}
   .fid-btn:active{transform:scale(.97)}
   .selo{width:28px;height:28px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--ouro-2);color:var(--bordo-2);font-family:"Marcellus",serif;font-size:13px;line-height:1}
-  .selo svg{width:62%;height:62%}
+  .selo svg{width:58%;height:58%}
   .fid-btn.tem-premio{border-color:var(--ouro-2);background:rgba(217,180,95,.12)}
 
   #fid-scrim .sheet{background:var(--bg)}
@@ -218,8 +218,15 @@
   .fid{padding-top:10px;padding-bottom:28px}
   .fid h3{font-family:"Marcellus",serif;font-weight:400;font-size:24px;letter-spacing:.02em;color:var(--vinho);margin:22px 0 6px;text-align:center}
   .fid .lead{text-align:center;color:var(--muted);margin:0 0 6px}
-  .regras{margin:18px 0;border-top:1px solid var(--line)}
-  .regra{display:flex;align-items:center;gap:14px;padding:13px 2px;border-bottom:1px solid var(--line)}
+  .regras{margin:22px 0}
+  .regras h4{font-family:"Marcellus",serif;font-weight:400;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--vinho);margin:22px 0 10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+  .passos-fid{list-style:none;counter-reset:p;padding:0;margin:0;display:flex;flex-direction:column;gap:14px}
+  .passos-fid li{counter-increment:p;position:relative;padding-left:40px;display:flex;flex-direction:column;gap:2px}
+  .passos-fid li::before{content:counter(p);position:absolute;left:0;top:0;width:26px;height:26px;border-radius:50%;border:1px solid var(--ouro-3);color:var(--ouro-3);display:grid;place-items:center;font-family:"Marcellus",serif;font-size:13px}
+  .passos-fid b{font-weight:600;font-size:15px}
+  .passos-fid span{font-size:13px;color:var(--muted);line-height:1.4}
+  .regras-uso{font-size:13px;color:var(--muted);margin:12px 0 0}
+  .regra{display:flex;align-items:center;gap:14px;padding:12px 2px;border-bottom:1px solid var(--line)}
   .regra .selo{width:32px;height:32px;font-size:14px}
   .regra b{font-family:"Marcellus",serif;font-weight:400;font-size:16px;color:var(--vinho);display:block}
   .regra span{font-size:13px;color:var(--muted)}
@@ -914,6 +921,7 @@
   const PANINI_SVG = `<svg viewBox="0 0 48 34" fill="none" stroke="#5A1422" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 14c0-6.5 8.5-10.5 19-10.5S43 7.5 43 14z" fill="rgba(91,20,34,.12)"/><path d="M11 9.5c2-1.3 4-1.3 6 0M21.5 7.3c2-1 4-1 6 .3M31.5 9c1.8-.9 3.6-.6 5.2.7"/><path d="M4 16.5c3 2 5 2 7.5 0 2.5 2 5 2 7.5 0 2.5 2 5 2 7.5 0 2.5 2 5 2 7.5 0 2.5 2 4.5 2 8 0"/><path d="M5 21h38"/><path d="M5 24.5h38c0 3.8-8.5 6-19 6s-19-2.2-19-6z" fill="rgba(91,20,34,.12)"/></svg>`;
   const STICKERS = ["parma","mortadela","salame","mortadela-close"];
   STICKERS.forEach(n => { const im = new Image(); im.src = `selos/${n}.webp`; });
+  const PASSAPORTE_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="10.5" r="3.2"/><path d="M9 17h6"/></svg>`;
   const seloHTML = () => `<span class="selo" aria-hidden="true">${PANINI_SVG}</span>`;
   function cartaoHTML({ atuais=0, ciclo=0, nome="", vazio=false }){
     const rot = [-6,5,-3,6,-5,4,-7,3,-4,5];
@@ -962,7 +970,7 @@
     if (!fidLigado()) return;
     const { data:{ session } } = await sb.auth.getSession();
     FID.sessao = session;
-    $("fid-btn").hidden = false; $("fid-btn-selo").textContent = "";
+    $("fid-btn").hidden = false; $("fid-btn-selo").innerHTML = PASSAPORTE_SVG;
     if (!session) { FID.cartao = null; $("fid-btn-txt").textContent = "Passaporte do panini"; $("fid-btn").classList.remove("tem-premio"); return; }
     const u = session.user;
     let { data:cli } = await sb.from("clientes").select("*").eq("user_id", u.id).maybeSingle();
@@ -978,7 +986,7 @@
     const at = Math.max(0, c?.atuais || 0);
     $("fid-btn-txt").textContent = c?.premio10 || c?.premio5 ? "Você ganhou um prêmio" : `Meu passaporte · ${Math.min(at,10)}/10`;
     $("fid-btn").classList.toggle("tem-premio", !!(c?.premio10 || c?.premio5));
-    $("fid-btn-selo").textContent = Math.min(at,10);
+
     if (!$("fid-scrim").hidden) renderFid();
     if (!$("ck-scrim").hidden && !ck.finalizado) renderCheckout();
   }
@@ -986,12 +994,20 @@
   $("fid-btn").onclick = abrirFid;
   function regrasHTML(){
     return `<div class="regras">
-      <div class="regra"><span class="selo" aria-hidden="true">1</span><div><b>1 carimbo</b><span>a cada pedido entregue</span></div></div>
-      <div class="regra"><span class="selo" aria-hidden="true">2</span><div><b>Em dobro</b><span>panini + Cinnamon Roll no mesmo pedido</span></div></div>
-      <div class="regra"><span class="selo" aria-hidden="true">5</span><div><b>1 panini</b><span>por nossa conta</span></div></div>
-      <div class="regra"><span class="selo" aria-hidden="true">10</span><div><b>1 panini + 3 Cinnamon Rolls</b><span>e um passaporte novo</span></div></div>
+      <h4>Como juntar</h4>
+      <ol class="passos-fid">
+        <li><b>Entre com sua conta</b><span>Aqui no passaporte. É rapidinho e sem senha.</span></li>
+        <li><b>Peça pelo site</b><span>Ou pelo WhatsApp, usando o mesmo número cadastrado no seu passaporte.</span></li>
+        <li><b>Ganhe 1 carimbo por pedido entregue</b><span>O carimbo cai no passaporte quando o pedido chega até você.</span></li>
+        <li><b>Carimbo em dobro</b><span>Pediu panini + Cinnamon Roll no mesmo pedido? Ganha 2 carimbos.</span></li>
+      </ol>
+      <h4>Prêmios</h4>
+      <div class="regra"><span class="selo" aria-hidden="true">5</span><div><b>Ao completar 5 carimbos</b><span>ganhe 1 panini por nossa conta</span></div></div>
+      <div class="regra"><span class="selo" aria-hidden="true">10</span><div><b>Ao completar 10 carimbos</b><span>ganhe 1 panini + 3 Cinnamon Rolls, e começa um passaporte novo</span></div></div>
+      <p class="regras-uso">Para usar o prêmio, coloque os itens no carrinho e toque em “Usar prêmio” antes de enviar o pedido.</p>
     </div>`;
   }
+
 
   function renderFid(){
     const b = $("fid-body");

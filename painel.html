@@ -112,6 +112,7 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
 .nota{border-left:3px solid var(--line);padding:2px 10px;font-size:13px;color:var(--muted);font-style:italic}
 .btn-wa,.ped a.btn-wa{background:#1F8F4E;color:#fff;text-decoration:none}
 .sim-res{margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--paper);line-height:1.5}
+.sim-add{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:8px}
 .linkpg{border-top:1px dashed var(--line);margin-top:10px;padding-top:10px;display:flex;flex-direction:column;gap:8px}
 .avisos{background:color-mix(in srgb,var(--mortadela) 22%,var(--surface));border-radius:12px;padding:10px 14px;margin:0 0 12px;font-size:14px}
 .avisos ul{margin:6px 0 0;padding-left:18px}
@@ -549,7 +550,7 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
   const STATUS = { aguardando:"Aguardando", confirmado:"Confirmado", entregue:"Entregue", cancelado:"Cancelado" };
   const CANAIS = { site:"Site", whatsapp:"WhatsApp", instagram:"Instagram", presencial:"Presencial", outro:"Outro" };
   let pedEdit = null, novoAberto = false, PEDS_LISTA = [], colarAberto = false, colarTexto = "", PRE = null, simAberto = false;
-  const simDados = { cep:"", numero:"", livre:"", janela_id:"" };
+  const simDados = { cep:"", numero:"", livre:"", janela_id:"", alvo:null };
   const jTurno = id => JANELAS.find(j=>j.id===id)?.turno || id;
   const janelasDoDia = d => d ? JANELAS.filter(j => j.ativo && j.dia_semana === U.parseData(d).dow) : [];
   const pagsTodas = () => [...new Set([...(CFG.pix_chave?["Pix"]:[]), "Pix", ...CFG.pagamentos])];
@@ -683,7 +684,7 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
       <div class="bar"><h2>Pedidos</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-ghost" type="button" id="btn-sim">${simAberto?"Fechar":"Simular frete"}</button><button class="btn btn-ghost" type="button" id="btn-colar">${colarAberto?"Fechar":"Colar pedido"}</button><button class="btn btn-primary" type="button" id="btn-novo">${novoAberto?"Fechar":"Novo pedido avulso"}</button></div></div>
       <div class="filters">${filtros.map(([v,l])=>`<button class="chip" type="button" data-f="${v}" aria-pressed="${pedFiltro===v}">${l}${v==="aguardando"&&parados?` (${parados})`:""}</button>`).join("")}</div>
       ${simAberto?`<div class="card" id="sim">
-        <div class="jh"><b>Simular frete</b></div>
+        <div class="jh"><b>${simDados.alvo?`Frete do pedido #${simDados.alvo.numero} · ${esc(simDados.alvo.nome)}`:"Simular frete"}</b></div>
         <div class="f3">
           <div class="fl"><label for="sim-cep">CEP</label><input class="input" id="sim-cep" inputmode="numeric" maxlength="9" placeholder="13010-000" value="${esc(simDados.cep)}"></div>
           <div class="fl"><label for="sim-num">Número</label><input class="input" id="sim-num" inputmode="numeric" maxlength="10" value="${esc(simDados.numero)}"></div>
@@ -705,7 +706,7 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
         return `<div class="day-h">${U.diaLongo(d)} · ${esc(jTurno(j))} <span class="note">— ${ps.length} pedido${ps.length>1?"s":""}, ${brl(tot)}</span></div><div class="grid">${ps.map(p=> pedEdit===p.id ? `<form class="card" data-edit="${p.id}">${formPedidoHTML(p)}</form>` : cardPedido(p)).join("")}</div>`;}).join("")
         :`<p class="empty">Nenhum pedido nesse filtro.</p>`}`;
     $("btn-novo").onclick = () => { novoAberto = !novoAberto; pedEdit = null; PRE = null; renderPedidos(); };
-    $("btn-sim").onclick = () => { simAberto = !simAberto; renderPedidos(); if (simAberto) setTimeout(()=>$("sim-cep")?.focus(), 50); };
+    $("btn-sim").onclick = () => { simAberto = !simAberto; simDados.alvo = null; renderPedidos(); if (simAberto) setTimeout(()=>$("sim-cep")?.focus(), 50); };
     if (simAberto) {
       ["cep","num","livre","jan"].forEach(k => $("sim-"+k).oninput = $("sim-"+k).onchange = () => { simDados.cep=$("sim-cep").value; simDados.numero=$("sim-num").value; simDados.livre=$("sim-livre").value; simDados.janela_id=$("sim-jan").value; });
       $("sim-go").onclick = async () => {
@@ -715,7 +716,29 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
         const r = await simularFrete({ cep:simDados.cep, numero:simDados.numero, livre:simDados.livre.trim(), janela_id:simDados.janela_id });
         b.disabled = false; b.textContent = "Calcular";
         const msg = freteMsg(r);
-        out.innerHTML = `<div>${freteResumo(r)}</div>${msg?`<div class="acts" style="margin-top:10px"><button class="btn btn-ghost" type="button" id="sim-copy">Copiar resposta</button></div><p class="note" style="margin:6px 0 0">${esc(msg)}</p>`:""}`;
+        const ativos = PEDS_LISTA.filter(x => !x.pago && x.status!=="cancelado" && x.status!=="entregue").sort((a,b)=>b.numero-a.numero);
+        const alvo = simDados.alvo ? PEDS_LISTA.find(x=>x.id===simDados.alvo.id) : null;
+        const podeSomar = r.taxa != null || r.gratis;
+        out.innerHTML = `<div>${freteResumo(r)}</div>
+          ${msg?`<div class="acts" style="margin-top:10px"><button class="btn btn-ghost" type="button" id="sim-copy">Copiar resposta</button></div><p class="note" style="margin:6px 0 0">${esc(msg)}</p>`:""}
+          ${podeSomar&&ativos.length?`<div class="sim-add">
+            <label for="sim-ped"><b>Cliente aceitou? Somar no pedido</b></label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><select class="input" id="sim-ped" style="flex:1;min-width:180px">${(alvo?[alvo]:[]).concat(ativos.filter(x=>x.id!==alvo?.id)).map(x=>`<option value="${x.id}">#${x.numero} · ${esc(x.nome)} · ${brl(x.subtotal)} + frete</option>`).join("")}</select>
+            <button class="btn btn-primary" type="button" id="sim-add">Adicionar ${r.gratis?"(grátis)":brl(r.taxa)}</button></div>
+            <span class="note">Coloca o frete e o endereço no pedido e atualiza o total. O link de pagamento já sai com o frete.</span></div>`:""}`;
+        $("sim-add")?.addEventListener("click", async () => {
+          const ped = PEDS_LISTA.find(x => x.id === $("sim-ped").value); if (!ped) return;
+          const taxa = r.gratis ? 0 : Number(r.taxa);
+          const num = simDados.numero.trim();
+          const endNovo = simDados.livre.trim() || [ [r.rua, num].filter(Boolean).join(", "), r.bairro, r.cidade ].filter(Boolean).join(" – ") + (r.cep ? ` – CEP ${r.cep.replace(/(\d{5})(\d{3})/,"$1-$2")}` : "");
+          const patch = { modo:"Entrega", taxa_entrega:taxa, total:Number(ped.subtotal) + taxa, frete_combinar:false, frete_gratis: r.gratis ? r.gratis.nome : "",
+            ...(r.km!=null ? { km:Math.round(r.km*10)/10 } : {}), ...(endNovo.length > 5 ? { endereco:endNovo } : {}), atualizado_em:new Date().toISOString() };
+          const b = $("sim-add"); b.disabled = true;
+          const { error } = await sb.from("pedidos").update(patch).eq("id", ped.id);
+          if (error) { b.disabled = false; toast(U.erro(error)); return; }
+          toast(`Frete somado no pedido #${ped.numero}: total ${brl(patch.total)}`);
+          simAberto = false; simDados.alvo = null; simDados.cep = simDados.numero = simDados.livre = ""; renderPedidos();
+        });
         $("sim-copy")?.addEventListener("click", async () => { try { await navigator.clipboard.writeText(msg); toast("Resposta copiada"); } catch(e) { toast("Não deu para copiar"); } });
       };
     }
@@ -727,6 +750,13 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
     }
     el.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { pedFiltro = b.dataset.f; renderPedidos(); });
     el.querySelectorAll("[data-act]").forEach(b => b.onclick = () => acaoPedido(b));
+    el.querySelectorAll("[data-frete]").forEach(b => b.onclick = () => {
+      const p = PEDS_LISTA.find(x => x.id === b.dataset.frete);
+      const cep = ((p.endereco||"").match(/\b(\d{5})-?(\d{3})\b/)||[]).slice(1).join("");
+      Object.assign(simDados, { alvo:{ id:p.id, numero:p.numero, nome:p.nome }, janela_id:p.janela_id, cep, numero:"", livre: (p.endereco||"").trim().length > 8 ? p.endereco.trim() : "" });
+      simAberto = true; renderPedidos();
+      setTimeout(() => { $("sim")?.scrollIntoView({ behavior:"smooth", block:"start" }); (simDados.livre ? $("sim-go") : $("sim-cep"))?.focus(); }, 60);
+    });
     el.querySelectorAll("[data-gerar-link]").forEach(b => b.onclick = async () => {
       const p = PEDS_LISTA.find(x => x.id === b.dataset.gerarLink);
       b.disabled = true; b.textContent = "Gerando link…";
@@ -785,6 +815,7 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
         ${p.status==="aguardando"?`<button class="btn btn-primary" type="button" data-act="confirmado" data-id="${p.id}">Confirmar</button>`:""}
         ${p.status==="confirmado"?`<button class="btn btn-primary" type="button" data-act="entregue" data-id="${p.id}">Marcar entregue</button>`:""}
         ${p.status!=="cancelado"?`<button class="btn btn-ghost" type="button" data-act="pago" data-v="${!p.pago}" data-id="${p.id}">${p.pago?"Desmarcar pago":"Marcar pago"}</button>`:""}
+        ${p.modo==="Entrega"&&!p.pago&&p.status!=="cancelado"&&p.status!=="entregue"?`<button class="btn btn-ghost" type="button" data-frete="${p.id}">${Number(p.taxa_entrega)>0?"Refazer frete":"Calcular frete"}</button>`:""}
         <button class="btn btn-ghost" type="button" data-editar="${p.id}">Editar</button>
         ${p.status==="aguardando"||p.status==="confirmado"?`<button class="btn btn-danger" type="button" data-act="cancelar" data-id="${p.id}">Cancelar</button>`:""}
         ${p.status==="cancelado"||p.status==="entregue"?`<button class="btn btn-ghost" type="button" data-act="confirmado" data-id="${p.id}">Reabrir</button>`:""}

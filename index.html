@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta property="og:image" content="https://cacioepepe.netlify.app/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Young+Serif&family=Figtree:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="base.css">
 <style>
 .app{max-width:640px;margin:0 auto;min-height:100vh;background:var(--bg);padding-bottom:110px}
@@ -178,23 +178,82 @@
   .btn-apple .ap{margin-left:.3em;font-size:1.05em}
   .prox{display:inline-block;background:var(--vinho);color:var(--on-vinho);font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:999px;margin-right:6px;vertical-align:2px}
   .mais-datas{width:100%;margin-top:12px}
-  /* cartão fidelidade */
-  .fid-btn{margin-top:12px;display:inline-flex;align-items:center;gap:8px;background:var(--surface);color:var(--vinho);border:1px solid color-mix(in srgb,var(--vinho) 30%,transparent);border-radius:999px;padding:9px 16px 9px 10px;font:inherit;font-weight:700;font-size:14px;cursor:pointer}
-  .fid-ico{width:26px;height:26px;border-radius:50%;background:var(--vinho);display:inline-block;flex:none;position:relative}
-  .fid-ico::after{content:"";position:absolute;inset:6px;border:2px dashed var(--on-vinho);border-radius:50%}
-  .fid{padding-top:8px;padding-bottom:24px}
-  .fid h3{font-family:var(--serif,inherit);margin:18px 0 6px}
-  .passaporte{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;background:var(--paper);border:2px dashed color-mix(in srgb,var(--vinho) 35%,transparent);border-radius:18px;padding:16px}
-  .passaporte .slot{aspect-ratio:1;border-radius:50%;border:2px dashed color-mix(in srgb,var(--vinho) 30%,transparent);display:grid;place-items:center;font-size:20px;background:var(--surface)}
-  .passaporte .slot.meta{border-style:solid;border-color:var(--vinho)}
-  .passaporte .slot.on{border:2px solid var(--vinho);background:color-mix(in srgb,var(--vinho) 10%,var(--surface));transform:rotate(-8deg)}
-  .passaporte .slot svg{width:78%;height:auto}
-  .fid-oi{margin:4px 0 10px;font-weight:600}
-  .fid-cont{margin:12px 0 4px}
-  .fid-premio{margin:12px 0;background:color-mix(in srgb,var(--pistache,#7aa35a) 22%,var(--surface));border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
-  .fid-premio small,.fid-ck small,.premio-op small{color:var(--muted);font-size:13px;display:block}
-  .fid-regras{margin:12px 0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:14px}
-  .fid-login{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+  /* ===== cartão fidelidade premium ===== */
+  :root{--ouro-1:#F7E7B4;--ouro-2:#D9B45F;--ouro-3:#A57A2C;--ouro-4:#7C5A1E;--bordo-1:#7E2234;--bordo-2:#5A1422;--bordo-3:#3B0B15}
+  .ouro-txt{background:linear-gradient(180deg,var(--ouro-1) 0%,var(--ouro-2) 45%,var(--ouro-3) 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .fid-btn{margin-top:14px;display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,rgba(255,255,255,.06),rgba(255,255,255,0));color:var(--ouro-1);border:1px solid rgba(217,180,95,.55);border-radius:999px;padding:8px 18px 8px 8px;font:inherit;font-weight:700;font-size:14px;letter-spacing:.01em;cursor:pointer;box-shadow:0 0 0 3px rgba(217,180,95,.08) inset;transition:transform .2s ease,border-color .2s}
+  .fid-btn:active{transform:scale(.97)}
+  .selo{width:28px;height:28px;border-radius:50%;flex:none;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,var(--ouro-1),var(--ouro-2) 45%,var(--ouro-3) 80%,var(--ouro-4));box-shadow:0 1px 2px rgba(0,0,0,.35),inset 0 0 0 1.5px rgba(255,255,255,.35)}
+  .selo svg{width:62%;height:62%}
+  .fid-btn.tem-premio .selo{animation:pulsoOuro 2.2s ease-in-out infinite}
+  @keyframes pulsoOuro{0%,100%{box-shadow:0 0 0 0 rgba(217,180,95,.55),inset 0 0 0 1.5px rgba(255,255,255,.35)}50%{box-shadow:0 0 0 8px rgba(217,180,95,0),inset 0 0 0 1.5px rgba(255,255,255,.35)}}
+
+  #fid-scrim .sheet{background:var(--bg)}
+  #fid-scrim .sheet-head{background:#2A0A11;border-bottom:0;color:var(--ouro-1)}
+  #fid-scrim .fid{background:linear-gradient(180deg,#2A0A11 0,#3B0B15 130px,var(--bg) 130px)}
+  #fid-scrim .sheet-head .icon-btn{color:var(--ouro-1);border-color:rgba(217,180,95,.4);background:transparent}
+  #fid-scrim .sheet-head h2{font-family:"Marcellus",serif;font-weight:400;letter-spacing:.12em;text-transform:uppercase;font-size:14px}
+
+  .cartao{position:relative;border-radius:22px;padding:22px 18px 18px;color:var(--ouro-1);overflow:hidden;isolation:isolate;
+    background:radial-gradient(120% 90% at 15% 0%,#8E2A3D 0%,var(--bordo-1) 25%,var(--bordo-2) 60%,var(--bordo-3) 100%);
+    box-shadow:0 22px 40px -18px rgba(59,11,21,.75),0 2px 0 rgba(255,255,255,.05) inset;animation:cartaoEntra .7s cubic-bezier(.2,.9,.25,1) both}
+  .cartao::before{content:"";position:absolute;inset:8px;border-radius:16px;border:1px solid rgba(217,180,95,.55);box-shadow:inset 0 0 0 3px rgba(59,11,21,.4),inset 0 0 0 4px rgba(217,180,95,.25);pointer-events:none;z-index:2}
+  .cartao::after{content:"";position:absolute;inset:-40% -60%;background:linear-gradient(115deg,transparent 42%,rgba(247,231,180,.16) 48%,rgba(255,255,255,.28) 50%,rgba(247,231,180,.16) 52%,transparent 58%);transform:translateX(-60%);animation:brilho 6.5s ease-in-out 1.2s infinite;pointer-events:none;z-index:3}
+  @keyframes brilho{0%{transform:translateX(-60%)}35%,100%{transform:translateX(60%)}}
+  @keyframes cartaoEntra{from{opacity:0;transform:translateY(18px) rotateX(12deg) scale(.97)}to{opacity:1;transform:none}}
+  .cartao .trama{position:absolute;inset:0;z-index:0;opacity:.07;background-image:repeating-linear-gradient(45deg,var(--ouro-2) 0 1px,transparent 1px 9px),repeating-linear-gradient(-45deg,var(--ouro-2) 0 1px,transparent 1px 9px)}
+  .cartao .orn{position:absolute;z-index:1;color:var(--ouro-2);opacity:.38;pointer-events:none}
+  .cartao .orn.o1{width:132px;bottom:-66px;right:-62px;rotate:90deg;transform-origin:50% 50%;animation:balanca 7s ease-in-out infinite}
+  .cartao .orn.o2{width:110px;top:-30px;left:44%;transform:scaleX(-1);opacity:.26}
+  .cartao .orn.o3{width:28px;bottom:56px;left:46%;opacity:.3}
+  @keyframes balanca{0%,100%{rotate:90deg}50%{rotate:86deg}}
+  .cartao .topo{position:relative;z-index:4;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:2px 6px 0}
+  .cartao .marca{font-family:"Marcellus",serif;font-size:20px;letter-spacing:.24em;line-height:1.05;text-transform:uppercase}
+  .cartao .marca small{display:block;font-family:"Figtree",sans-serif;font-size:9.5px;letter-spacing:.32em;margin-top:6px;color:rgba(247,231,180,.75);-webkit-text-fill-color:rgba(247,231,180,.75)}
+  .cartao .num{font-family:"Marcellus",serif;font-size:11px;letter-spacing:.2em;color:rgba(247,231,180,.7);text-align:right;white-space:nowrap}
+  .cartao .num b{display:block;font-size:22px;letter-spacing:.05em;font-weight:400;color:var(--ouro-1)}
+  .cartao .selos{position:relative;z-index:4;display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin:22px 4px 16px}
+  .cartao .s{aspect-ratio:1;border-radius:50%;display:grid;place-items:center;position:relative;border:1.5px dashed rgba(217,180,95,.45);background:radial-gradient(circle,rgba(0,0,0,.18),rgba(0,0,0,.05))}
+  .cartao .s .n{font-family:"Marcellus",serif;font-size:12px;color:rgba(247,231,180,.35)}
+  .cartao .s.on{border:0;background:radial-gradient(circle at 35% 28%,var(--ouro-1) 0%,var(--ouro-2) 42%,var(--ouro-3) 78%,var(--ouro-4) 100%);box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 0 0 2px rgba(255,255,255,.28),inset 0 -3px 6px rgba(124,90,30,.55);rotate:var(--r,-8deg);animation:carimba .55s cubic-bezier(.3,1.6,.5,1) both;animation-delay:calc(var(--i)*90ms + .35s)}
+  .cartao .s.on::after{content:"";position:absolute;inset:4px;border-radius:50%;border:1px dashed rgba(91,20,34,.35)}
+  .cartao .s.on svg{width:66%;height:auto;position:relative;z-index:1}
+  @keyframes carimba{0%{opacity:0;transform:scale(2.1)}60%{opacity:1;transform:scale(.92)}100%{transform:scale(1)}}
+  .cartao .s.meta{border:1.5px solid rgba(217,180,95,.8)}
+  .cartao .s.meta:not(.on)::before{content:"";position:absolute;inset:-5px;border-radius:50%;border:1px solid rgba(217,180,95,.25)}
+  .cartao .s.meta .presente{width:56%;height:auto;color:var(--ouro-2)}
+  .cartao .s.meta.pronto{box-shadow:0 0 0 0 rgba(247,231,180,.6);animation:carimba .55s cubic-bezier(.3,1.6,.5,1) both,brilhaMeta 2.4s ease-in-out 1.4s infinite;animation-delay:calc(var(--i)*90ms + .35s),1.4s}
+  @keyframes brilhaMeta{0%,100%{box-shadow:0 3px 8px rgba(0,0,0,.4),0 0 0 0 rgba(247,231,180,.55)}50%{box-shadow:0 3px 8px rgba(0,0,0,.4),0 0 0 10px rgba(247,231,180,0)}}
+  .cartao .rodape{position:relative;z-index:4;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;padding:0 6px}
+  .cartao .membro{font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:rgba(247,231,180,.6)}
+  .cartao .membro b{display:block;font-family:"Marcellus",serif;font-weight:400;font-size:17px;letter-spacing:.08em;text-transform:none;color:var(--ouro-1);margin-top:3px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cartao .conta{font-family:"Marcellus",serif;text-align:right;font-size:11px;letter-spacing:.18em;color:rgba(247,231,180,.7)}
+  .cartao .conta b{font-size:30px;font-weight:400;letter-spacing:0;line-height:1;display:block}
+  .cartao .barra{position:relative;z-index:4;height:3px;border-radius:3px;background:rgba(217,180,95,.18);margin:14px 6px 0;overflow:hidden}
+  .cartao .barra i{position:absolute;inset:0 auto 0 0;width:var(--p);background:linear-gradient(90deg,var(--ouro-3),var(--ouro-1));border-radius:3px;animation:enche 1.2s cubic-bezier(.2,.8,.2,1) .5s both}
+  @keyframes enche{from{width:0}}
+  .cartao.vazio .s{border-color:rgba(217,180,95,.3)}
+  .cartao .cadeado{position:relative;z-index:4;text-align:center;font-family:"Marcellus",serif;letter-spacing:.2em;font-size:11px;text-transform:uppercase;color:rgba(247,231,180,.75);margin-top:-2px}
+
+  .fid{padding-top:10px;padding-bottom:28px}
+  .fid h3{font-family:"Marcellus",serif;font-weight:400;font-size:24px;letter-spacing:.02em;color:var(--vinho);margin:22px 0 6px;text-align:center}
+  .fid .lead{text-align:center;color:var(--muted);margin:0 0 6px}
+  .regras{margin:14px 0;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .regra{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden}
+  .regra .selo{width:34px;height:34px}
+  .regra b{font-family:"Marcellus",serif;font-weight:400;font-size:17px;color:var(--vinho)}
+  .regra span{font-size:13px;color:var(--muted);line-height:1.35}
+  .regra.destaque{grid-column:1/-1;background:linear-gradient(135deg,var(--bordo-2),var(--bordo-3));border-color:transparent;color:var(--ouro-1);flex-direction:row;align-items:center;gap:12px}
+  .regra.destaque b{color:var(--ouro-1)}
+  .regra.destaque span{color:rgba(247,231,180,.75)}
+  .fid-premio{position:relative;overflow:hidden;margin:16px 0;border-radius:18px;padding:16px 16px 16px 64px;background:linear-gradient(135deg,#FFF8E6,#F4E2B5);border:1px solid var(--ouro-2);box-shadow:0 10px 24px -14px rgba(165,122,44,.8)}
+  .fid-premio .selo{position:absolute;left:14px;top:50%;translate:0 -50%;width:38px;height:38px;animation:pulsoOuro 2.2s ease-in-out infinite}
+  .fid-premio b{font-family:"Marcellus",serif;font-weight:400;font-size:18px;color:var(--bordo-2);display:block}
+  .fid-premio small{color:#7C5A1E;font-size:13px}
+  .fid-premio .faisca{position:absolute;width:6px;height:6px;background:var(--ouro-2);rotate:45deg;opacity:0;animation:faisca 2.8s ease-in-out infinite}
+  @keyframes faisca{0%,100%{opacity:0;transform:scale(.3)}50%{opacity:1;transform:scale(1)}}
+  .fid-cont{text-align:center;color:var(--muted);margin:12px 0 0;font-size:14px}
+  .fid-login{display:flex;flex-direction:column;gap:10px;margin-top:18px}
   .btn-social{background:#fff;color:#1f1f1f;border:1px solid #d6d6d6;display:flex;justify-content:center;align-items:center;gap:10px;font-weight:600}
   .btn-social svg{width:18px;height:18px}
   .btn-social.apple{background:#000;color:#fff;border-color:#000;font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif}
@@ -202,14 +261,27 @@
   .fid-email label{font-weight:600;font-size:14px}
   .fid-email div{display:flex;gap:8px}
   .fid-email input{flex:1;min-width:0}
-  .fid-ok{background:var(--paper);border-radius:12px;padding:12px}
-  .fid-perfil{margin:16px 0;display:flex;flex-direction:column;gap:10px}
+  .fid-ok{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .fid-sec{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;margin:16px 0}
+  .fid-sec h4{font-family:"Marcellus",serif;font-weight:400;font-size:16px;letter-spacing:.06em;color:var(--vinho);margin:0 0 10px;text-transform:uppercase}
+  .fid-perfil{display:flex;flex-direction:column;gap:10px}
   .fid-perfil small{color:var(--muted);font-size:12px}
-  .fid-hist{list-style:none;padding:0;margin:0 0 16px;display:flex;flex-direction:column;gap:6px;font-size:14px}
-  .fid-hist li{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);padding-bottom:6px}
-  .fid .sair{width:100%}
-  .fid-ck{display:flex;align-items:center;gap:12px;background:var(--paper);border-radius:14px;padding:12px 14px}
+  .fid-hist{list-style:none;padding:0;margin:0;display:flex;flex-direction:column}
+  .fid-hist li{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .fid-hist li:last-child{border-bottom:0}
+  .fid-hist .selo{width:24px;height:24px}
+  .fid-hist li span:nth-child(2){flex:1}
+  .fid-hist em{font-style:normal;color:var(--muted);font-size:12px}
+  .fid .sair{width:100%;margin-top:4px}
+  .fid .sub{text-align:center}
+  .fid-ck{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,var(--bordo-2),var(--bordo-3));color:var(--ouro-1);border-radius:16px;padding:12px 14px}
+  .fid-ck .selo{width:34px;height:34px}
   .fid-ck > div{flex:1;min-width:0}
+  .fid-ck small{color:rgba(247,231,180,.75)}
+  .fid-ck .btn{background:transparent;color:var(--ouro-1);border-color:rgba(217,180,95,.6)}
+  @media (prefers-reduced-motion:reduce){.cartao,.cartao::after,.cartao .s.on,.cartao .s.meta.pronto,.cartao .orn,.cartao .barra i,.selo,.fid-premio .faisca,.fid-premio .selo{animation:none!important}}
+  /* cartão fidelidade */
+  .premio-op small{color:var(--muted);font-size:13px;display:block}
   .premio-op{margin-top:10px;width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;background:var(--surface);border:2px solid color-mix(in srgb,var(--vinho) 30%,transparent);border-radius:14px;padding:12px 14px;font:inherit;color:inherit;cursor:pointer}
   .premio-op[aria-pressed="true"]{border-color:var(--vinho);background:color-mix(in srgb,var(--vinho) 8%,var(--surface))}
   .premio-op .ck{width:24px;height:24px;border-radius:50%;border:2px solid var(--vinho);display:grid;place-items:center;color:var(--vinho);font-weight:800;flex:none}
@@ -226,7 +298,7 @@
       </div>
       <p class="tag" id="aviso">Paninis artesanais na ciabatta da casa.</p>
       <div class="next" id="next"><span class="dot"></span><span id="next-txt">Carregando a agenda…</span></div>
-      <button class="fid-btn" type="button" id="fid-btn" hidden><span class="fid-ico" aria-hidden="true"></span><span id="fid-btn-txt">Cartão fidelidade</span></button>
+      <button class="fid-btn" type="button" id="fid-btn" hidden><span class="selo" id="fid-btn-selo" aria-hidden="true"></span><span id="fid-btn-txt">Cartão fidelidade</span></button>
     </div>
   </header>
 
@@ -863,7 +935,26 @@
 
   // ---------- cartão fidelidade ----------
   const FID = { sessao:null, cartao:null, cliente:null, carregando:false, emailEnviado:"" };
-  const PANINI_SVG = `<svg viewBox="0 0 48 32" aria-hidden="true"><path d="M4 13c0-6 9-10 20-10s20 4 20 10H4z" fill="#d9a25f"/><path d="M6 9c3-2 6-2 8 0M20 6c3-1 6-1 8 1M33 8c2-1 5 0 7 2" stroke="#b97d3c" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M3 14h42c0 2-3 3-6 2-3 2-6 2-9 0-3 2-6 2-9 0-3 2-6 2-9 0-3 1-9 1-9-2z" fill="#7aa35a"/><rect x="4" y="16" width="40" height="5" rx="2.5" fill="#c9555a"/><rect x="4" y="21" width="40" height="3" rx="1.5" fill="#f2e6c9"/><path d="M4 24h40c0 3-9 5-20 5S4 27 4 24z" fill="#d9a25f"/></svg>`;
+  // desenhos do cartão (traço próprio): panini em traço vinho para o selo dourado, ramo de oliva, manjericão e presente
+  const PANINI_SVG = `<svg viewBox="0 0 48 34" fill="none" stroke="#5A1422" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 14c0-6.5 8.5-10.5 19-10.5S43 7.5 43 14z" fill="rgba(91,20,34,.12)"/><path d="M11 9.5c2-1.3 4-1.3 6 0M21.5 7.3c2-1 4-1 6 .3M31.5 9c1.8-.9 3.6-.6 5.2.7"/><path d="M4 16.5c3 2 5 2 7.5 0 2.5 2 5 2 7.5 0 2.5 2 5 2 7.5 0 2.5 2 5 2 7.5 0 2.5 2 4.5 2 8 0"/><path d="M5 21h38"/><path d="M5 24.5h38c0 3.8-8.5 6-19 6s-19-2.2-19-6z" fill="rgba(91,20,34,.12)"/></svg>`;
+  const OLIVA_SVG = `<svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M112 6C92 22 70 40 46 62 34 73 22 86 10 102"/><g fill="currentColor" fill-opacity=".14"><path d="M98 17c-8-1-14 3-16 9 8 1 14-3 16-9z"/><path d="M84 28c3-8 0-14-6-17-3 7 0 14 6 17z"/><path d="M76 37c-8 0-13 5-14 11 8 0 13-5 14-11z"/><path d="M62 49c2-8-2-14-8-16-2 8 2 14 8 16z"/><path d="M52 58c-7 1-12 6-12 12 7-1 12-6 12-12z"/><path d="M38 71c1-8-3-13-9-14-1 8 3 13 9 14z"/></g><g fill="currentColor" fill-opacity=".55" stroke-width="1.1"><ellipse cx="90" cy="36" rx="4.2" ry="5.6" transform="rotate(-30 90 36)"/><ellipse cx="58" cy="64" rx="4.2" ry="5.6" transform="rotate(-25 58 64)"/></g></svg>`;
+  const MANJ_SVG = `<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true"><path d="M20 37V18"/><path d="M20 22c-8 0-14-6-14-14 8 0 14 6 14 14z" fill="currentColor" fill-opacity=".14"/><path d="M20 22c8 0 14-6 14-14-8 0-14 6-14 14z" fill="currentColor" fill-opacity=".14"/><path d="M20 22L10 11M20 22l10-11"/><path d="M20 30c-4 0-7-3-7-7 4 0 7 3 7 7zM20 30c4 0 7-3 7-7-4 0-7 3-7 7z" fill="currentColor" fill-opacity=".14"/></svg>`;
+  const PRESENTE_SVG = `<svg class="presente" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="13" width="22" height="15" rx="2"/><path d="M3.5 9h25v4h-25zM16 9v19"/><path d="M16 9c-2-5-8-6-8-2.5S13 9 16 9zM16 9c2-5 8-6 8-2.5S19 9 16 9z"/></svg>`;
+  const seloHTML = () => `<span class="selo" aria-hidden="true">${PANINI_SVG}</span>`;
+  function cartaoHTML({ atuais=0, ciclo=0, nome="", vazio=false, p5=false, p10=false }){
+    const rot = [-9,6,-4,8,-7,5,-10,3,-6,7];
+    return `<div class="cartao${vazio?" vazio":""}">
+      <span class="trama"></span>
+      <span class="orn o1">${OLIVA_SVG}</span><span class="orn o2">${OLIVA_SVG}</span><span class="orn o3">${MANJ_SVG}</span>
+      <div class="topo"><div class="marca ouro-txt">Cacio<br>&amp; Pepe<small>Passaporte do panini</small></div>
+        <div class="num">${vazio?"MEMBRO":"CARTÃO"}<b class="ouro-txt">${vazio?"—":"Nº "+String(ciclo+1).padStart(2,"0")}</b></div></div>
+      <div class="selos">${Array.from({length:10},(_,i)=>{ const on = i<atuais, meta = i===4||i===9, pronto = meta && on && (i===4?p5:p10);
+        return `<span class="s${on?" on":""}${meta?" meta":""}${pronto?" pronto":""}" style="--i:${i};--r:${rot[i]}deg">${on?PANINI_SVG:meta?PRESENTE_SVG:`<span class="n">${i+1}</span>`}</span>`; }).join("")}</div>
+      <div class="rodape"><div class="membro">${vazio?"Seu nome aqui":"Membro"}<b>${esc(nome||"Cliente Cacio & Pepe")}</b></div>
+        <div class="conta ouro-txt"><b>${Math.min(atuais,10)}</b>de 10</div></div>
+      <div class="barra"><i style="--p:${Math.min(atuais,10)*10}%"></i></div>
+    </div>`;
+  }
   const fidLigado = () => CFG && CFG.fid_ativo;
   const temCategoria = c => cart.some(l => prod(l.produto_id)?.categoria === c);
   const carimbosDoCarrinho = () => 1 + (temCategoria("Paninis") && temCategoria("Doces") ? 1 : 0);
@@ -887,10 +978,10 @@
   function fidCheckoutHTML(){
     if (!fidLigado() || ck.finalizado) return "";
     const n = carimbosDoCarrinho();
-    if (!FID.sessao) return `<div class="ck-sec gutter"><div class="fid-ck"><span class="fid-ico" aria-hidden="true"></span><div><b>Ganhe ${n} carimbo${n>1?"s":""} com este pedido</b><small>Entre no cartão fidelidade: 5 carimbos valem 1 panini.</small></div><button class="btn btn-ghost" type="button" data-fid-entrar>Entrar</button></div></div>`;
+    if (!FID.sessao) return `<div class="ck-sec gutter"><div class="fid-ck">${seloHTML()}<div><b>Ganhe ${n} carimbo${n>1?"s":""} com este pedido</b><small>Entre no cartão fidelidade: 5 carimbos valem 1 panini.</small></div><button class="btn btn-ghost" type="button" data-fid-entrar>Entrar</button></div></div>`;
     const c = FID.cartao || {};
     const prem = [10,5].filter(k => c["premio"+k]);
-    return `<div class="ck-sec gutter"><div class="fid-ck"><span class="fid-ico" aria-hidden="true"></span><div><b>Este pedido vale ${n} carimbo${n>1?"s":""}</b><small>${n>1?"Panini + doce no mesmo pedido: carimbo em dobro. ":""}Cai no seu cartão quando o pedido for entregue.</small></div></div>
+    return `<div class="ck-sec gutter"><div class="fid-ck">${seloHTML()}<div><b>Este pedido vale ${n} carimbo${n>1?"s":""}</b><small>${n>1?"Panini + doce no mesmo pedido: carimbo em dobro. ":""}Cai no seu cartão quando o pedido for entregue.</small></div></div>
       ${prem.map(k => { const d = descontoDe(k); return `<button type="button" class="premio-op" data-premio="${k}" aria-pressed="${ck.premio===k}">
         <span><b>Usar prêmio de ${k} carimbos</b><small>${k===5?"1 panini grátis":"1 panini + 3 Cinnamon Rolls grátis"}${d.falta?` · ${esc(d.falta)}`:d.v?` · − ${brl(d.v)}`:""}</small></span><span class="ck">${ck.premio===k?"✓":""}</span></button>`; }).join("")}</div>`;
   }
@@ -898,8 +989,8 @@
     if (!fidLigado()) return;
     const { data:{ session } } = await sb.auth.getSession();
     FID.sessao = session;
-    $("fid-btn").hidden = false;
-    if (!session) { FID.cartao = null; $("fid-btn-txt").textContent = "Cartão fidelidade"; return; }
+    $("fid-btn").hidden = false; $("fid-btn-selo").innerHTML = PANINI_SVG;
+    if (!session) { FID.cartao = null; $("fid-btn-txt").textContent = "Passaporte do panini"; $("fid-btn").classList.remove("tem-premio"); return; }
     const u = session.user;
     let { data:cli } = await sb.from("clientes").select("*").eq("user_id", u.id).maybeSingle();
     if (!cli) {
@@ -912,28 +1003,34 @@
     const { data:c } = await sb.rpc("meu_cartao");
     FID.cartao = c || null;
     const at = Math.max(0, c?.atuais || 0);
-    $("fid-btn-txt").textContent = c?.premio10 || c?.premio5 ? "Você tem um prêmio! 🎁" : `Meu cartão: ${Math.min(at,10)}/10`;
+    $("fid-btn-txt").textContent = c?.premio10 || c?.premio5 ? "Você ganhou um prêmio" : `Meu passaporte · ${Math.min(at,10)}/10`;
+    $("fid-btn").classList.toggle("tem-premio", !!(c?.premio10 || c?.premio5));
     if (!$("fid-scrim").hidden) renderFid();
     if (!$("ck-scrim").hidden && !ck.finalizado) renderCheckout();
   }
   function abrirFid(){ renderFid(); abrir("fid-scrim"); }
   $("fid-btn").onclick = abrirFid;
   function regrasHTML(){
-    return `<ul class="fid-regras"><li>Cada pedido entregue vale <b>1 carimbo</b>.</li><li>Panini + Cinnamon Roll no mesmo pedido: <b>2 carimbos</b>.</li><li><b>5 carimbos:</b> 1 panini grátis.</li><li><b>10 carimbos:</b> 1 panini + 3 Cinnamon Rolls grátis, e começa um cartão novo.</li></ul>`;
+    return `<div class="regras">
+      <div class="regra">${seloHTML()}<b>1 carimbo</b><span>a cada pedido entregue</span></div>
+      <div class="regra">${seloHTML()}<b>Em dobro</b><span>panini + Cinnamon Roll no mesmo pedido</span></div>
+      <div class="regra destaque"><span class="selo" aria-hidden="true" style="color:#5A1422">${PRESENTE_SVG}</span><div><b>5 carimbos</b><br><span>1 panini por nossa conta</span></div></div>
+      <div class="regra destaque"><span class="selo" aria-hidden="true" style="color:#5A1422">${PRESENTE_SVG}</span><div><b>10 carimbos</b><br><span>1 panini + 3 Cinnamon Rolls, e um passaporte novo</span></div></div>
+    </div>`;
   }
   function renderFid(){
     const b = $("fid-body");
     if (!FID.sessao) {
       const L = CFG.fid_logins || ["email"];
       b.innerHTML = `<div class="gutter fid">
-        <div class="passaporte vazio">${Array.from({length:10},(_,i)=>`<span class="slot${i===4||i===9?" meta":""}">${i===4||i===9?"🎁":""}</span>`).join("")}</div>
-        <h3>Junte carimbos e ganhe paninis</h3>${regrasHTML()}
+        ${cartaoHTML({ vazio:true, atuais:0 })}
+        <h3>Junte carimbos, ganhe paninis</h3><p class="lead">Seu passaporte da Cacio &amp; Pepe. Entre para começar a carimbar.</p>
         <div class="fid-login">
           ${L.includes("google")?`<button class="btn btn-social" type="button" data-oauth="google"><svg viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.7H9v3.3h4.8a4.1 4.1 0 0 1-1.8 2.7v2.2h2.9c1.7-1.6 2.7-3.9 2.7-6.5z"/><path fill="#34A853" d="M9 18c2.4 0 4.5-.8 5.9-2.2l-2.9-2.2c-.8.5-1.8.9-3 .9-2.3 0-4.3-1.6-5-3.7H1v2.3A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M4 10.8a5.4 5.4 0 0 1 0-3.5V5H1a9 9 0 0 0 0 8l3-2.2z"/><path fill="#EA4335" d="M9 3.6c1.3 0 2.5.5 3.4 1.3l2.6-2.6A9 9 0 0 0 1 5l3 2.3c.7-2.1 2.7-3.7 5-3.7z"/></svg>Entrar com Google</button>`:""}
           ${L.includes("apple")?`<button class="btn btn-social apple" type="button" data-oauth="apple"><span class="ap"></span>Entrar com Apple</button>`:""}
           ${L.includes("email")?(FID.emailEnviado?`<p class="fid-ok">Mandamos um link de acesso para <b>${esc(FID.emailEnviado)}</b>. Abra o e-mail neste aparelho e toque no link.</p>`:`<form class="fid-email" id="fid-email"><label for="fid-em">${L.length>1?"Ou entre com seu e-mail":"Entre com seu e-mail"}</label><div><input class="input" id="fid-em" type="email" autocomplete="email" placeholder="voce@email.com" required><button class="btn btn-primary" type="submit">Receber link</button></div></form>`):""}
         </div>
-        <p class="sub">Sem senha. Usamos sua conta só para guardar seus carimbos.</p></div>`;
+        <p class="sub">Sem senha. Usamos sua conta só para guardar seus carimbos.</p>${regrasHTML()}</div>`;
       b.querySelectorAll("[data-oauth]").forEach(x => x.onclick = async () => {
         const { error } = await sb.auth.signInWithOAuth({ provider:x.dataset.oauth, options:{ redirectTo: location.origin + "/?fid=1" } });
         if (error) toast(/not enabled|provider/i.test(error.message) ? "Esse login ainda não está ligado. Use outra opção." : error.message);
@@ -951,20 +1048,20 @@
     const c = FID.cartao || { atuais:0, total:0 };
     const at = Math.max(0, c.atuais || 0);
     const cli = FID.cliente || {};
+    const premio = (t, sub) => `<div class="fid-premio"><span class="selo" aria-hidden="true" style="color:#5A1422">${PRESENTE_SVG}</span><b>${t}</b><small>${sub}</small>${[[12,"8%"],[78,"14%"],[88,"70%"],[30,"82%"]].map(([x,y],k)=>`<i class="faisca" style="left:${x}%;top:${y};animation-delay:${k*.6}s"></i>`).join("")}</div>`;
     b.innerHTML = `<div class="gutter fid">
-      <p class="fid-oi">Oi${cli.nome?`, ${esc(cli.nome.split(" ")[0])}`:""}! Seu cartão${c.ciclo?` nº ${c.ciclo+1}`:""}:</p>
-      <div class="passaporte">${Array.from({length:10},(_,i)=>`<span class="slot${i<at?" on":""}${i===4||i===9?" meta":""}">${i<at?PANINI_SVG:(i===4||i===9?"🎁":"")}</span>`).join("")}</div>
-      <p class="fid-cont"><b>${Math.min(at,10)} de 10 carimbos</b>${at>10?` (+${at-10} para o próximo cartão)`:""}${c.pendentes?` · ${c.pendentes} pedido${c.pendentes>1?"s":""} a caminho`:""}</p>
-      ${c.premio10?`<div class="fid-premio">🎁 <b>Você ganhou 1 panini + 3 Cinnamon Rolls!</b><small>Coloque no carrinho e escolha "Usar prêmio" no pedido.</small></div>`:""}
-      ${c.premio5?`<div class="fid-premio">🎁 <b>Você ganhou 1 panini!</b><small>Coloque no carrinho e escolha "Usar prêmio" no pedido.</small></div>`:""}
-      ${!c.premio5&&!c.premio10?`<p class="sub">${at<5?`Faltam ${5-at} para o panini grátis.`:`Faltam ${10-at} para o prêmio de 10.`}</p>`:""}
-      <form class="fid-perfil" id="fid-perfil">
-        <div class="field"><label for="fid-nome">Seu nome</label><input class="input" id="fid-nome" maxlength="80" value="${esc(cli.nome||"")}"></div>
+      ${cartaoHTML({ atuais:at, ciclo:c.ciclo||0, nome:cli.nome, p5:c.premio5, p10:c.premio10 })}
+      <p class="fid-cont">${at>10?`+${at-10} carimbo${at-10>1?"s":""} já guardado${at-10>1?"s":""} para o próximo passaporte · `:""}${c.pendentes?`${c.pendentes} pedido${c.pendentes>1?"s":""} a caminho de virar carimbo`:""}</p>
+      ${c.premio10?premio("Você ganhou 1 panini + 3 Cinnamon Rolls","Coloque no carrinho e escolha “Usar prêmio” no pedido."):""}
+      ${c.premio5?premio("Você ganhou 1 panini","Coloque no carrinho e escolha “Usar prêmio” no pedido."):""}
+      ${!c.premio5&&!c.premio10?`<h3>${at<5?`Faltam ${5-at} para o seu panini`:`Faltam ${10-at} para o grande prêmio`}</h3>`:""}
+      ${regrasHTML()}
+      ${(c.historico||[]).length?`<div class="fid-sec"><h4>Seus carimbos</h4><ul class="fid-hist">${c.historico.map(h=>`<li>${seloHTML()}<span>${h.numero?`Pedido #${h.numero}`:esc(h.motivo)}${h.qtd>1?" <em>· em dobro</em>":""}</span><em>${new Date(h.quando).toLocaleDateString("pt-BR",{day:"2-digit",month:"short"})} · +${h.qtd}</em></li>`).join("")}</ul></div>`:""}
+      <form class="fid-sec fid-perfil" id="fid-perfil"><h4>Seus dados</h4>
+        <div class="field"><label for="fid-nome">Nome no passaporte</label><input class="input" id="fid-nome" maxlength="80" value="${esc(cli.nome||"")}"></div>
         <div class="field"><label for="fid-tel">Seu WhatsApp</label><input class="input" id="fid-tel" inputmode="tel" maxlength="20" value="${esc(cli.telefone||"")}" placeholder="(19) 9 0000-0000"><small>Pedidos que você faz pelo WhatsApp com esse número também ganham carimbo.</small></div>
         <button class="btn btn-ghost" type="submit">Salvar</button>
       </form>
-      ${regrasHTML()}
-      ${(c.historico||[]).length?`<h4>Seus carimbos</h4><ul class="fid-hist">${c.historico.map(h=>`<li><span>${h.numero?`Pedido #${h.numero}`:esc(h.motivo)}${h.qtd>1?" · em dobro":""}</span><span>${new Date(h.quando).toLocaleDateString("pt-BR")} · +${h.qtd}</span></li>`).join("")}</ul>`:""}
       <button class="btn btn-ghost sair" type="button" id="fid-sair">Sair da conta</button>
     </div>`;
     $("fid-perfil").onsubmit = async e => {
@@ -972,7 +1069,7 @@
       const nome = $("fid-nome").value.trim(), telefone = $("fid-tel").value.trim();
       const { error } = await sb.from("clientes").update({ nome, telefone }).eq("user_id", FID.sessao.user.id);
       if (error) { toast(error.message); return; }
-      FID.cliente = { ...FID.cliente, nome, telefone }; if (nome) D.nome = nome; if (telefone) D.tel = telefone; saveDados(); toast("Salvo");
+      FID.cliente = { ...FID.cliente, nome, telefone }; if (nome) D.nome = nome; if (telefone) D.tel = telefone; saveDados(); toast("Salvo"); renderFid();
     };
     $("fid-sair").onclick = async () => { await sb.auth.signOut(); FID.sessao = null; FID.cartao = null; ck.premio = null; renderFid(); carregarFid(); };
   }

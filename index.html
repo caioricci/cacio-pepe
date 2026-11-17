@@ -141,7 +141,7 @@
 .frete.bad{background:var(--mortadela);color:var(--on-mortadela)}
 .apartir{font-weight:500;font-size:.85em;color:var(--muted)}
 .cpreco{display:block;font-size:13px;color:var(--muted);font-weight:600}
-.tag-dia{display:inline-block;margin-top:8px;font-size:12px;font-weight:700;border-radius:999px;padding:3px 10px;background:var(--mortadela);color:var(--on-mortadela)}
+.dia-info{display:block;margin-top:6px;font-size:13px;color:var(--muted)}
 .frete.gratis{background:var(--pistache);color:var(--on-pistache)}
 .frete.dica{margin-top:8px;background:transparent;border:1.5px dashed var(--line);color:var(--muted)}
 .frete.dica b{color:var(--ink)}
@@ -401,7 +401,7 @@
     $("cats").hidden = cats.length < 2;
     $("menu").innerHTML = cats.map((c,i)=>`<section class="sec" id="cat-${i}"><h2>${esc(c)}</h2>${
       PRODUTOS.filter(p=>p.categoria===c).map(p=>`<button type="button" class="prod" data-id="${p.id}">
-        <div><h3>${esc(p.nome)}</h3><p>${esc(p.descricao)}</p><div class="price">${OPC.aPartir(p)!=null?`<span class="apartir">a partir de</span> ${brl(OPC.aPartir(p))}`:brl(p.preco)}</div>${aPartir(p)?`<span class="tag-dia">Encomendas para ${U.DIAS_C[U.parseData(aPartir(p)).dow]} ${U.ddmm(aPartir(p))} em diante</span>`:p.dias_semana?.length?`<span class="tag-dia">${esc(tagDias(p))}</span>`:""}</div>
+        <div><h3>${esc(p.nome)}</h3><p>${esc(p.descricao)}</p><div class="price">${OPC.aPartir(p)!=null?`<span class="apartir">a partir de</span> ${brl(OPC.aPartir(p))}`:brl(p.preco)}</div>${aPartir(p)?`<span class="dia-info">Encomendas a partir de ${U.DIAS_C[U.parseData(aPartir(p)).dow]} ${U.ddmm(aPartir(p))}</span>`:""}</div>
         <div class="thumb">${p.fotos.length?`<img src="${esc(p.fotos[0])}" alt="" loading="lazy">${p.fotos.length>1?`<span class="n">${p.fotos.length} fotos</span>`:""}`:`<div class="noimg">${esc(p.nome[0])}</div>`}</div>
       </button>`).join("")}</section>`).join("");
     document.querySelectorAll(".prod").forEach(b => b.onclick = () => abrirProduto(b.dataset.id));
@@ -416,7 +416,7 @@
     const fotos = p.fotos || [];
     $("pd-body").innerHTML = `
       ${fotos.length?`<div class="gallery"><div class="slides" id="slides">${fotos.map(f=>`<img src="${esc(f)}" alt="${esc(p.nome)}">`).join("")}</div>${fotos.length>1?`<div class="dots" id="dots">${fotos.map((_,i)=>`<span class="${i?"":"on"}"></span>`).join("")}</div>`:""}</div>`:""}
-      <div class="pd gutter"><h3 id="pd-title">${esc(p.nome)}</h3><p>${esc(p.descricao)}</p><div class="price" id="pd-preco">${OPC.aPartir(p)!=null?`<span class="apartir">a partir de</span> ${brl(OPC.aPartir(p))}`:brl(p.preco)}</div>${aPartir(p)?`<span class="tag-dia">Encomendas para ${U.DIAS_C[U.parseData(aPartir(p)).dow]} ${U.ddmm(aPartir(p))} em diante</span>`:p.dias_semana?.length?`<span class="tag-dia">${esc(tagDias(p))}</span>`:""}</div>
+      <div class="pd gutter"><h3 id="pd-title">${esc(p.nome)}</h3><p>${esc(p.descricao)}</p><div class="price" id="pd-preco">${OPC.aPartir(p)!=null?`<span class="apartir">a partir de</span> ${brl(OPC.aPartir(p))}`:brl(p.preco)}</div>${aPartir(p)?`<span class="dia-info">Encomendas a partir de ${U.DIAS_C[U.parseData(aPartir(p)).dow]} ${U.ddmm(aPartir(p))}</span>`:diasDiferentes(p)?`<span class="dia-info">${esc(tagDias(p))}</span>`:""}</div>
       ${(p.opcoes||[]).map((g,gi)=>`<div class="group gutter" role="radiogroup" aria-labelledby="g-${gi}">
         <div class="group-h"><div><b id="g-${gi}">${esc(g.nome)}</b><small>Escolha 1 opção</small></div>${g.obrigatorio?`<span class="req" id="req-${gi}">Obrigatório</span>`:""}</div>
         ${(g.escolhas||[]).map((e,ei)=>`<label class="choice"><span>${esc(OPC.nome(e))}${OPC.preco(e)!=null?`<small class="cpreco">${brl(OPC.preco(e))}${OPC.unid(e)>1?` · ${brl(OPC.preco(e)/OPC.unid(e))} cada`:""}</small>`:""}</span><input type="radio" name="g${gi}" id="g${gi}-${ei}" value="${esc(OPC.nome(e))}" data-g="${gi}"></label>`).join("")}
@@ -501,6 +501,12 @@
 
   function endPub(){ return (CFG.endereco_publico || CFG.endereco_retirada.replace(/,\s*\d+[A-Za-z]?\b/, "")).trim(); }
   // "Entrega só às sextas (aos sábados, só Rio Claro e Piracicaba)"
+  // só vale avisar no produto quando ele sai em menos dias que a loja (ex: Cinnamon só na sexta)
+  function diasDiferentes(p){
+    if (!p.dias_semana?.length) return false;
+    const loja = [...new Set(SLOTS.filter(s => !s.cidades?.length).map(s => s.dia_semana))];
+    return !loja.length || loja.some(d => !p.dias_semana.includes(d)) || p.dias_semana.some(d => SLOTS.some(s => s.dia_semana === d && s.cidades?.length));
+  }
   function tagDias(p){
     const reg = {}; // dia -> cidades, quando todos os horários daquele dia são regionais
     for (const d of p.dias_semana) {

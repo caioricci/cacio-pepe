@@ -271,6 +271,8 @@
   .premio-op .ck{width:24px;height:24px;border-radius:50%;border:2px solid var(--vinho);display:grid;place-items:center;color:var(--vinho);font-weight:800;flex:none}
   .premio-l{color:var(--vinho);font-weight:600}
   .foot .legal a{color:inherit}
+  .fid .fid-h-topo{margin-top:6px}
+  .fid-previa{margin-top:22px}
 </style>
 </head>
 <body>
@@ -1023,14 +1025,14 @@
     if (!FID.sessao) {
       const L = CFG.fid_logins || ["email"];
       b.innerHTML = `<div class="gutter fid">
-        ${cartaoHTML({ vazio:true, atuais:0 })}
-        <h3>Junte carimbos, ganhe paninis</h3><p class="lead">Seu passaporte da Cacio &amp; Pepe. Entre para começar a carimbar.</p>
+        <h3 class="fid-h-topo">Junte carimbos, ganhe paninis</h3><p class="lead">Entre no seu passaporte da Cacio &amp; Pepe para começar a carimbar.</p>
         <div class="fid-login">
           ${L.includes("google")?`<button class="btn btn-social" type="button" data-oauth="google"><svg viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.7H9v3.3h4.8a4.1 4.1 0 0 1-1.8 2.7v2.2h2.9c1.7-1.6 2.7-3.9 2.7-6.5z"/><path fill="#34A853" d="M9 18c2.4 0 4.5-.8 5.9-2.2l-2.9-2.2c-.8.5-1.8.9-3 .9-2.3 0-4.3-1.6-5-3.7H1v2.3A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M4 10.8a5.4 5.4 0 0 1 0-3.5V5H1a9 9 0 0 0 0 8l3-2.2z"/><path fill="#EA4335" d="M9 3.6c1.3 0 2.5.5 3.4 1.3l2.6-2.6A9 9 0 0 0 1 5l3 2.3c.7-2.1 2.7-3.7 5-3.7z"/></svg>Entrar com Google</button>`:""}
           ${L.includes("apple")?`<button class="btn btn-social apple" type="button" data-oauth="apple"><span class="ap"></span>Entrar com Apple</button>`:""}
           ${L.includes("email")?(FID.emailEnviado?`<p class="fid-ok">Mandamos um link de acesso para <b>${esc(FID.emailEnviado)}</b>. Abra o e-mail neste aparelho e toque no link.</p>`:`<form class="fid-email" id="fid-email"><label for="fid-em">${L.length>1?"Ou entre com seu e-mail":"Entre com seu e-mail"}</label><div><input class="input" id="fid-em" type="email" autocomplete="email" placeholder="voce@email.com" required><button class="btn btn-primary" type="submit">Receber link</button></div></form>`):""}
         </div>
-        <p class="sub">Sem senha. Usamos sua conta só para guardar seus carimbos. Ao entrar, você concorda com os <a href="/termos">Termos de uso</a> e a <a href="/privacidade">Política de privacidade</a>.</p>${regrasHTML()}</div>`;
+        <p class="sub">Sem senha. Usamos sua conta só para guardar seus carimbos. Ao entrar, você concorda com os <a href="/termos">Termos de uso</a> e a <a href="/privacidade">Política de privacidade</a>.</p>
+        <div class="fid-previa">${cartaoHTML({ vazio:true, atuais:0 })}</div>${regrasHTML()}</div>`;
       b.querySelectorAll("[data-oauth]").forEach(x => x.onclick = async () => {
         const { error } = await sb.auth.signInWithOAuth({ provider:x.dataset.oauth, options:{ redirectTo: location.origin + "/?fid=1" } });
         if (error) toast(/not enabled|provider/i.test(error.message) ? "Esse login ainda não está ligado. Use outra opção." : error.message);

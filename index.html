@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Cacio & Pepe — Encomendas</title>
+<title>Cacio &amp; Pepe</title>
+<meta name="google-site-verification" content="CPGoteYr5EISj89qkFcV5F2irKfzCOoJLCOyW0tXvT8" />
+<meta name="description" content="Cacio &amp; Pepe: paninis artesanais por encomenda em Campinas.">
 <meta name="description" content="Paninis artesanais na ciabatta da casa. Encomende para quarta ou sexta, almoço ou noite.">
 <meta name="theme-color" content="#5C1824">
 <meta name="color-scheme" content="light">
@@ -373,7 +375,7 @@
     if (CFG.logo_url) $("logo").src = CFG.logo_url;
     if (CFG.capa_url) { $("hero").style.backgroundImage = `url("${CFG.capa_url.replace(/"/g,"%22")}")`; $("hero").classList.add("has-capa"); }
     const pags = [...(CFG.pix_chave?["Pix"]:[]), ...(CFG.infinitepay_handle?[PG_LINK]:[]), ...CFG.pagamentos];
-    $("foot").innerHTML = `<span>Retirada: ${esc(endPub())}</span><span>Pagamento: ${esc(pags.join(", "))}</span><span class="legal"><a href="/privacidade">Privacidade</a> · <a href="/termos">Termos de uso</a></span>`;
+    $("foot").innerHTML = `<span>Retirada: ${esc(endPub())}</span><span>Pagamento: ${esc(pags.join(", "))}</span><span class="legal"><b>Cacio &amp; Pepe</b> · paninis artesanais em Campinas · <a href="/privacidade">Privacidade</a> · <a href="/termos">Termos de uso</a></span>`;
     if (CFG.loja_lat != null && CFG.loja_lng != null) LOJA = { lat:CFG.loja_lat, lng:CFG.loja_lng };
   }
   async function atualizarAgenda(){

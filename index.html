@@ -178,6 +178,42 @@
   .btn-apple .ap{margin-left:.3em;font-size:1.05em}
   .prox{display:inline-block;background:var(--vinho);color:var(--on-vinho);font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:999px;margin-right:6px;vertical-align:2px}
   .mais-datas{width:100%;margin-top:12px}
+  /* cartão fidelidade */
+  .fid-btn{margin-top:12px;display:inline-flex;align-items:center;gap:8px;background:var(--surface);color:var(--vinho);border:1px solid color-mix(in srgb,var(--vinho) 30%,transparent);border-radius:999px;padding:9px 16px 9px 10px;font:inherit;font-weight:700;font-size:14px;cursor:pointer}
+  .fid-ico{width:26px;height:26px;border-radius:50%;background:var(--vinho);display:inline-block;flex:none;position:relative}
+  .fid-ico::after{content:"";position:absolute;inset:6px;border:2px dashed var(--on-vinho);border-radius:50%}
+  .fid{padding-top:8px;padding-bottom:24px}
+  .fid h3{font-family:var(--serif,inherit);margin:18px 0 6px}
+  .passaporte{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;background:var(--paper);border:2px dashed color-mix(in srgb,var(--vinho) 35%,transparent);border-radius:18px;padding:16px}
+  .passaporte .slot{aspect-ratio:1;border-radius:50%;border:2px dashed color-mix(in srgb,var(--vinho) 30%,transparent);display:grid;place-items:center;font-size:20px;background:var(--surface)}
+  .passaporte .slot.meta{border-style:solid;border-color:var(--vinho)}
+  .passaporte .slot.on{border:2px solid var(--vinho);background:color-mix(in srgb,var(--vinho) 10%,var(--surface));transform:rotate(-8deg)}
+  .passaporte .slot svg{width:78%;height:auto}
+  .fid-oi{margin:4px 0 10px;font-weight:600}
+  .fid-cont{margin:12px 0 4px}
+  .fid-premio{margin:12px 0;background:color-mix(in srgb,var(--pistache,#7aa35a) 22%,var(--surface));border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+  .fid-premio small,.fid-ck small,.premio-op small{color:var(--muted);font-size:13px;display:block}
+  .fid-regras{margin:12px 0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:14px}
+  .fid-login{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+  .btn-social{background:#fff;color:#1f1f1f;border:1px solid #d6d6d6;display:flex;justify-content:center;align-items:center;gap:10px;font-weight:600}
+  .btn-social svg{width:18px;height:18px}
+  .btn-social.apple{background:#000;color:#fff;border-color:#000;font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif}
+  .fid-email{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+  .fid-email label{font-weight:600;font-size:14px}
+  .fid-email div{display:flex;gap:8px}
+  .fid-email input{flex:1;min-width:0}
+  .fid-ok{background:var(--paper);border-radius:12px;padding:12px}
+  .fid-perfil{margin:16px 0;display:flex;flex-direction:column;gap:10px}
+  .fid-perfil small{color:var(--muted);font-size:12px}
+  .fid-hist{list-style:none;padding:0;margin:0 0 16px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+  .fid-hist li{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+  .fid .sair{width:100%}
+  .fid-ck{display:flex;align-items:center;gap:12px;background:var(--paper);border-radius:14px;padding:12px 14px}
+  .fid-ck > div{flex:1;min-width:0}
+  .premio-op{margin-top:10px;width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;background:var(--surface);border:2px solid color-mix(in srgb,var(--vinho) 30%,transparent);border-radius:14px;padding:12px 14px;font:inherit;color:inherit;cursor:pointer}
+  .premio-op[aria-pressed="true"]{border-color:var(--vinho);background:color-mix(in srgb,var(--vinho) 8%,var(--surface))}
+  .premio-op .ck{width:24px;height:24px;border-radius:50%;border:2px solid var(--vinho);display:grid;place-items:center;color:var(--vinho);font-weight:800;flex:none}
+  .premio-l{color:var(--vinho);font-weight:600}
 </style>
 </head>
 <body>
@@ -190,6 +226,7 @@
       </div>
       <p class="tag" id="aviso">Paninis artesanais na ciabatta da casa.</p>
       <div class="next" id="next"><span class="dot"></span><span id="next-txt">Carregando a agenda…</span></div>
+      <button class="fid-btn" type="button" id="fid-btn" hidden><span class="fid-ico" aria-hidden="true"></span><span id="fid-btn-txt">Cartão fidelidade</span></button>
     </div>
   </header>
 
@@ -224,6 +261,14 @@
     <div class="sheet-foot" id="ck-foot">
       <button class="btn btn-primary" type="button" id="ck-send"><span>Enviar pedido</span><span id="ck-total"></span></button>
     </div>
+  </div>
+</div>
+
+<!-- Cartão fidelidade -->
+<div class="scrim" id="fid-scrim" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="fid-title">
+    <div class="sheet-head"><button class="icon-btn" type="button" data-close aria-label="Fechar">✕</button><h2 id="fid-title">Cartão fidelidade</h2><span style="width:38px"></span></div>
+    <div class="sheet-body" id="fid-body"></div>
   </div>
 </div>
 
@@ -480,7 +525,7 @@
   function renderFrete(){
     const el = $("frete-box"); if (el) el.innerHTML = freteHTML();
     const tt = $("totals"); if (tt) tt.innerHTML = totaisHTML();
-    $("ck-total").textContent = brl(subtotal()+taxa());
+    $("ck-total").textContent = brl(totalCk());
   }
   function totaisHTML(){
     const f = ck.frete; let linhaEnt = "";
@@ -492,7 +537,8 @@
         : f.estado==="ok" ? `<div><span>Entrega <small>(estimada)</small></span><span>${brl(f.taxa)}</span></div>`
         : `<div><span>Entrega</span><span><small>${f.estado==="combinar"?"a combinar":"—"}</small></span></div>`;
     }
-    return `<div><span>Subtotal</span><span>${brl(subtotal())}</span></div>${linhaEnt}<div class="t"><span>Total</span><span>${brl(subtotal()+taxa())}</span></div>`;
+    const dsc = descontoPremio();
+    return `<div><span>Subtotal</span><span>${brl(subtotal())}</span></div>${linhaEnt}${dsc?`<div class="premio-l"><span>Prêmio fidelidade</span><span>− ${brl(dsc)}</span></div>`:""}<div class="t"><span>Total</span><span>${brl(totalCk())}</span></div>`;
   }
 
   // ---------- checkout ----------
@@ -586,12 +632,15 @@
         <div class="field"><label for="d-obs">Observação para o pedido (opcional)</label><textarea class="input" id="d-obs" data-d="obs" maxlength="500">${v("obs")}</textarea></div>
       </div>`:""}
 
+      ${fidCheckoutHTML()}
       <div class="ck-sec gutter">
         <div class="totals" id="totals">${totaisHTML()}</div>
         <div class="err" id="ck-err" role="alert">${esc(ck.err||"")}</div>
       </div>`;
 
     const body = $("ck-body");
+    body.querySelectorAll("[data-premio]").forEach(b => b.onclick = () => { ck.premio = ck.premio === +b.dataset.premio ? null : +b.dataset.premio; ck.err=""; renderCheckout(); });
+    body.querySelector("[data-fid-entrar]")?.addEventListener("click", abrirFid);
     body.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{ cart.splice(+b.dataset.rm,1); saveCart(); renderCartBar(); renderCheckout(); });
     body.querySelectorAll("[data-dec]").forEach(b=>b.onclick=()=>{ const l=cart[+b.dataset.dec]; l.qtd--; if(l.qtd<1) cart.splice(+b.dataset.dec,1); saveCart(); renderCartBar(); renderCheckout(); });
     body.querySelectorAll("[data-inc]").forEach(b=>b.onclick=()=>{ const l=cart[+b.dataset.inc]; l.qtd=Math.min(20,l.qtd+1); saveCart(); renderCartBar(); renderCheckout(); });
@@ -618,7 +667,7 @@
       });
       ["d-num","d-rua","d-cidade"].forEach(id => $(id).addEventListener("change", calcularFrete));
     }
-    $("ck-total").textContent = brl(subtotal()+taxa());
+    $("ck-total").textContent = brl(totalCk());
     $("ck-send").firstElementChild.textContent = ck.pag==="Pix" ? "Enviar e pagar com Pix" : "Enviar pedido pelo WhatsApp";
   }
 
@@ -680,6 +729,7 @@
       const taxa = r.frete_gratis ? "Grátis" : r.frete_combinar ? "A combinar" : brl(r.taxa_entrega);
       L.push(`*Taxa de entrega*:  ${taxa}`);
     }
+    if (Number(r.desconto) > 0) L.push(`*Prêmio fidelidade (${r.premio} carimbos):* − ${brl(r.desconto)}`);
     L.push(`*Total: ${brl(r.total)}*${r.frete_combinar ? " + entrega" : ""}`);
     L.push("", SEP, "");
     L.push(`*${D.nome.trim()}*`);
@@ -707,7 +757,7 @@
     if (f) { ck.err = f; $("ck-err").textContent = f; $("ck-err").scrollIntoView({behavior:"smooth",block:"center"}); return; }
     const sel = SLOTS.find(s=>s.data+"|"+s.janela_id===ck.slot);
     enviando = true; $("ck-send").setAttribute("aria-disabled","true"); $("ck-send").firstElementChild.textContent = "Reservando seu pedido…";
-    const { data:r, error } = await sb.rpc("criar_pedido", {
+        const { data:r, error } = await sb.rpc("criar_pedido", {
       p_data: sel.data, p_janela: sel.janela_id,
       p_itens: cart.map(l=>({ produto_id:l.produto_id, opcao:l.opcao, obs:l.obs, qtd:l.qtd })),
       p_modo: ck.modo, p_nome: D.nome.trim(), p_telefone: D.tel.trim(), p_endereco: ck.modo==="Entrega" ? enderecoTexto() : "",
@@ -715,6 +765,7 @@
       p_km: ck.modo==="Entrega" && (ck.frete.estado==="ok" || ck.frete.estado==="fora") ? Math.round(ck.frete.km*10)/10 : null,
       p_bairro: ck.modo==="Entrega" ? D.bairro.trim() : "", p_cep: ck.modo==="Entrega" ? (D.cep||"") : "",
       p_lat: ck.modo==="Entrega" ? (ck.frete.cli?.lat ?? null) : null, p_lng: ck.modo==="Entrega" ? (ck.frete.cli?.lng ?? null) : null,
+      ...(premioValido() ? { p_premio: ck.premio } : {}),
     });
     enviando = false; $("ck-send").removeAttribute("aria-disabled");
     if (error) { ck.err = U.erro(error); await atualizarAgenda(); renderCheckout(); $("ck-err").scrollIntoView({behavior:"smooth",block:"center"}); return; }
@@ -723,6 +774,7 @@
     const link = `https://wa.me/${CFG.whatsapp.replace(/\D/g,"")}?text=${encodeURIComponent(msg)}`;
     const pix = ck.pag==="Pix", ck_pag = ck.pag;
     cart = []; saveCart(); renderCartBar(); ck.slot = null; ck.err = ""; ck.finalizado = true; D.obs = ""; D.troco = "";
+    ck.premio = null; if (FID.sessao) carregarFid();
     $("ck-foot").hidden = true;
     $("ck-title").textContent = "Pedido reservado";
 
@@ -804,12 +856,132 @@
   let ultimoFoco = null;
   function abrir(id){ ultimoFoco=document.activeElement; $(id).hidden=false; document.body.style.overflow="hidden"; $(id).querySelector("[data-close]")?.focus(); }
   function fechar(id){ $(id).hidden=true; if($("pd-scrim").hidden && $("ck-scrim").hidden) document.body.style.overflow=""; ultimoFoco?.focus?.(); if(id==="ck-scrim"){ $("ck-title").textContent="Meu pedido"; ck.finalizado=false; } }
-  ["pd-scrim","ck-scrim"].forEach(id=>{
+  ["pd-scrim","ck-scrim","fid-scrim"].forEach(id=>{
     $(id).addEventListener("click", e => { if (e.target.id===id || e.target.closest(".sheet-head [data-close]")) fechar(id); });
   });
-  document.addEventListener("keydown", e => { if(e.key==="Escape"){ if(!$("pd-scrim").hidden) fechar("pd-scrim"); else if(!$("ck-scrim").hidden) fechar("ck-scrim"); } });
+  document.addEventListener("keydown", e => { if(e.key==="Escape"){ if(!$("fid-scrim").hidden) fechar("fid-scrim"); else if(!$("pd-scrim").hidden) fechar("pd-scrim"); else if(!$("ck-scrim").hidden) fechar("ck-scrim"); } });
 
-  carregar();
+  // ---------- cartão fidelidade ----------
+  const FID = { sessao:null, cartao:null, cliente:null, carregando:false, emailEnviado:"" };
+  const PANINI_SVG = `<svg viewBox="0 0 48 32" aria-hidden="true"><path d="M4 13c0-6 9-10 20-10s20 4 20 10H4z" fill="#d9a25f"/><path d="M6 9c3-2 6-2 8 0M20 6c3-1 6-1 8 1M33 8c2-1 5 0 7 2" stroke="#b97d3c" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M3 14h42c0 2-3 3-6 2-3 2-6 2-9 0-3 2-6 2-9 0-3 2-6 2-9 0-3 1-9 1-9-2z" fill="#7aa35a"/><rect x="4" y="16" width="40" height="5" rx="2.5" fill="#c9555a"/><rect x="4" y="21" width="40" height="3" rx="1.5" fill="#f2e6c9"/><path d="M4 24h40c0 3-9 5-20 5S4 27 4 24z" fill="#d9a25f"/></svg>`;
+  const fidLigado = () => CFG && CFG.fid_ativo;
+  const temCategoria = c => cart.some(l => prod(l.produto_id)?.categoria === c);
+  const carimbosDoCarrinho = () => 1 + (temCategoria("Paninis") && temCategoria("Doces") ? 1 : 0);
+  // mesma conta do banco: panini mais caro do carrinho; no de 10, + 3 cinnamon rolls (os de maior valor)
+  function descontoDe(premio){
+    if (!premio) return { v:0 };
+    const linhas = cart.map(l => ({ p:prod(l.produto_id), l })).filter(x => x.p);
+    const pans = linhas.filter(x => x.p.categoria === "Paninis").map(x => OPC.linha(x.p, x.l.opcao).preco);
+    if (!pans.length) return { v:0, falta:"Coloque um panini no carrinho para usar o prêmio." };
+    let v = Math.max(...pans);
+    if (premio === 10) {
+      const un = linhas.filter(x => /cinnamon/i.test(x.p.nome)).flatMap(x => { const L = OPC.linha(x.p, x.l.opcao); return Array(x.l.qtd * L.unid).fill(L.preco / L.unid); }).sort((a,b)=>b-a);
+      if (un.length < 3) return { v:0, falta:"Coloque 3 Cinnamon Rolls no carrinho para usar esse prêmio." };
+      v += un.slice(0,3).reduce((a,b)=>a+b,0);
+    }
+    return { v: Math.round(Math.min(v, subtotal()) * 100) / 100 };
+  }
+  const premioValido = () => fidLigado() && FID.sessao && ck.premio && FID.cartao?.["premio"+ck.premio] && !descontoDe(ck.premio).falta;
+  const descontoPremio = () => premioValido() ? descontoDe(ck.premio).v : 0;
+  const totalCk = () => Math.max(0, subtotal() + taxa() - descontoPremio());
+  function fidCheckoutHTML(){
+    if (!fidLigado() || ck.finalizado) return "";
+    const n = carimbosDoCarrinho();
+    if (!FID.sessao) return `<div class="ck-sec gutter"><div class="fid-ck"><span class="fid-ico" aria-hidden="true"></span><div><b>Ganhe ${n} carimbo${n>1?"s":""} com este pedido</b><small>Entre no cartão fidelidade: 5 carimbos valem 1 panini.</small></div><button class="btn btn-ghost" type="button" data-fid-entrar>Entrar</button></div></div>`;
+    const c = FID.cartao || {};
+    const prem = [10,5].filter(k => c["premio"+k]);
+    return `<div class="ck-sec gutter"><div class="fid-ck"><span class="fid-ico" aria-hidden="true"></span><div><b>Este pedido vale ${n} carimbo${n>1?"s":""}</b><small>${n>1?"Panini + doce no mesmo pedido: carimbo em dobro. ":""}Cai no seu cartão quando o pedido for entregue.</small></div></div>
+      ${prem.map(k => { const d = descontoDe(k); return `<button type="button" class="premio-op" data-premio="${k}" aria-pressed="${ck.premio===k}">
+        <span><b>Usar prêmio de ${k} carimbos</b><small>${k===5?"1 panini grátis":"1 panini + 3 Cinnamon Rolls grátis"}${d.falta?` · ${esc(d.falta)}`:d.v?` · − ${brl(d.v)}`:""}</small></span><span class="ck">${ck.premio===k?"✓":""}</span></button>`; }).join("")}</div>`;
+  }
+  async function carregarFid(){
+    if (!fidLigado()) return;
+    const { data:{ session } } = await sb.auth.getSession();
+    FID.sessao = session;
+    $("fid-btn").hidden = false;
+    if (!session) { FID.cartao = null; $("fid-btn-txt").textContent = "Cartão fidelidade"; return; }
+    const u = session.user;
+    let { data:cli } = await sb.from("clientes").select("*").eq("user_id", u.id).maybeSingle();
+    if (!cli) {
+      cli = { user_id:u.id, nome:(u.user_metadata?.full_name || u.user_metadata?.name || D.nome || "").slice(0,80), telefone:D.tel || "", email:u.email || "" };
+      await sb.from("clientes").insert(cli);
+    }
+    FID.cliente = cli;
+    if (!D.nome && cli.nome) D.nome = cli.nome;
+    if (!D.tel && cli.telefone) D.tel = cli.telefone;
+    const { data:c } = await sb.rpc("meu_cartao");
+    FID.cartao = c || null;
+    const at = Math.max(0, c?.atuais || 0);
+    $("fid-btn-txt").textContent = c?.premio10 || c?.premio5 ? "Você tem um prêmio! 🎁" : `Meu cartão: ${Math.min(at,10)}/10`;
+    if (!$("fid-scrim").hidden) renderFid();
+    if (!$("ck-scrim").hidden && !ck.finalizado) renderCheckout();
+  }
+  function abrirFid(){ renderFid(); abrir("fid-scrim"); }
+  $("fid-btn").onclick = abrirFid;
+  function regrasHTML(){
+    return `<ul class="fid-regras"><li>Cada pedido entregue vale <b>1 carimbo</b>.</li><li>Panini + Cinnamon Roll no mesmo pedido: <b>2 carimbos</b>.</li><li><b>5 carimbos:</b> 1 panini grátis.</li><li><b>10 carimbos:</b> 1 panini + 3 Cinnamon Rolls grátis, e começa um cartão novo.</li></ul>`;
+  }
+  function renderFid(){
+    const b = $("fid-body");
+    if (!FID.sessao) {
+      const L = CFG.fid_logins || ["email"];
+      b.innerHTML = `<div class="gutter fid">
+        <div class="passaporte vazio">${Array.from({length:10},(_,i)=>`<span class="slot${i===4||i===9?" meta":""}">${i===4||i===9?"🎁":""}</span>`).join("")}</div>
+        <h3>Junte carimbos e ganhe paninis</h3>${regrasHTML()}
+        <div class="fid-login">
+          ${L.includes("google")?`<button class="btn btn-social" type="button" data-oauth="google"><svg viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.7H9v3.3h4.8a4.1 4.1 0 0 1-1.8 2.7v2.2h2.9c1.7-1.6 2.7-3.9 2.7-6.5z"/><path fill="#34A853" d="M9 18c2.4 0 4.5-.8 5.9-2.2l-2.9-2.2c-.8.5-1.8.9-3 .9-2.3 0-4.3-1.6-5-3.7H1v2.3A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M4 10.8a5.4 5.4 0 0 1 0-3.5V5H1a9 9 0 0 0 0 8l3-2.2z"/><path fill="#EA4335" d="M9 3.6c1.3 0 2.5.5 3.4 1.3l2.6-2.6A9 9 0 0 0 1 5l3 2.3c.7-2.1 2.7-3.7 5-3.7z"/></svg>Entrar com Google</button>`:""}
+          ${L.includes("apple")?`<button class="btn btn-social apple" type="button" data-oauth="apple"><span class="ap"></span>Entrar com Apple</button>`:""}
+          ${L.includes("email")?(FID.emailEnviado?`<p class="fid-ok">Mandamos um link de acesso para <b>${esc(FID.emailEnviado)}</b>. Abra o e-mail neste aparelho e toque no link.</p>`:`<form class="fid-email" id="fid-email"><label for="fid-em">${L.length>1?"Ou entre com seu e-mail":"Entre com seu e-mail"}</label><div><input class="input" id="fid-em" type="email" autocomplete="email" placeholder="voce@email.com" required><button class="btn btn-primary" type="submit">Receber link</button></div></form>`):""}
+        </div>
+        <p class="sub">Sem senha. Usamos sua conta só para guardar seus carimbos.</p></div>`;
+      b.querySelectorAll("[data-oauth]").forEach(x => x.onclick = async () => {
+        const { error } = await sb.auth.signInWithOAuth({ provider:x.dataset.oauth, options:{ redirectTo: location.origin + "/?fid=1" } });
+        if (error) toast(/not enabled|provider/i.test(error.message) ? "Esse login ainda não está ligado. Use outra opção." : error.message);
+      });
+      const fe = $("fid-email");
+      if (fe) fe.onsubmit = async e => {
+        e.preventDefault(); const em = $("fid-em").value.trim(); const btn = fe.querySelector("button"); btn.disabled = true;
+        const { error } = await sb.auth.signInWithOtp({ email:em, options:{ emailRedirectTo: location.origin + "/?fid=1" } });
+        btn.disabled = false;
+        if (error) { toast(/rate|limit/i.test(error.message) ? "Muitos pedidos de link agora. Tente de novo em alguns minutos." : error.message); return; }
+        FID.emailEnviado = em; renderFid();
+      };
+      return;
+    }
+    const c = FID.cartao || { atuais:0, total:0 };
+    const at = Math.max(0, c.atuais || 0);
+    const cli = FID.cliente || {};
+    b.innerHTML = `<div class="gutter fid">
+      <p class="fid-oi">Oi${cli.nome?`, ${esc(cli.nome.split(" ")[0])}`:""}! Seu cartão${c.ciclo?` nº ${c.ciclo+1}`:""}:</p>
+      <div class="passaporte">${Array.from({length:10},(_,i)=>`<span class="slot${i<at?" on":""}${i===4||i===9?" meta":""}">${i<at?PANINI_SVG:(i===4||i===9?"🎁":"")}</span>`).join("")}</div>
+      <p class="fid-cont"><b>${Math.min(at,10)} de 10 carimbos</b>${at>10?` (+${at-10} para o próximo cartão)`:""}${c.pendentes?` · ${c.pendentes} pedido${c.pendentes>1?"s":""} a caminho`:""}</p>
+      ${c.premio10?`<div class="fid-premio">🎁 <b>Você ganhou 1 panini + 3 Cinnamon Rolls!</b><small>Coloque no carrinho e escolha "Usar prêmio" no pedido.</small></div>`:""}
+      ${c.premio5?`<div class="fid-premio">🎁 <b>Você ganhou 1 panini!</b><small>Coloque no carrinho e escolha "Usar prêmio" no pedido.</small></div>`:""}
+      ${!c.premio5&&!c.premio10?`<p class="sub">${at<5?`Faltam ${5-at} para o panini grátis.`:`Faltam ${10-at} para o prêmio de 10.`}</p>`:""}
+      <form class="fid-perfil" id="fid-perfil">
+        <div class="field"><label for="fid-nome">Seu nome</label><input class="input" id="fid-nome" maxlength="80" value="${esc(cli.nome||"")}"></div>
+        <div class="field"><label for="fid-tel">Seu WhatsApp</label><input class="input" id="fid-tel" inputmode="tel" maxlength="20" value="${esc(cli.telefone||"")}" placeholder="(19) 9 0000-0000"><small>Pedidos que você faz pelo WhatsApp com esse número também ganham carimbo.</small></div>
+        <button class="btn btn-ghost" type="submit">Salvar</button>
+      </form>
+      ${regrasHTML()}
+      ${(c.historico||[]).length?`<h4>Seus carimbos</h4><ul class="fid-hist">${c.historico.map(h=>`<li><span>${h.numero?`Pedido #${h.numero}`:esc(h.motivo)}${h.qtd>1?" · em dobro":""}</span><span>${new Date(h.quando).toLocaleDateString("pt-BR")} · +${h.qtd}</span></li>`).join("")}</ul>`:""}
+      <button class="btn btn-ghost sair" type="button" id="fid-sair">Sair da conta</button>
+    </div>`;
+    $("fid-perfil").onsubmit = async e => {
+      e.preventDefault();
+      const nome = $("fid-nome").value.trim(), telefone = $("fid-tel").value.trim();
+      const { error } = await sb.from("clientes").update({ nome, telefone }).eq("user_id", FID.sessao.user.id);
+      if (error) { toast(error.message); return; }
+      FID.cliente = { ...FID.cliente, nome, telefone }; if (nome) D.nome = nome; if (telefone) D.tel = telefone; saveDados(); toast("Salvo");
+    };
+    $("fid-sair").onclick = async () => { await sb.auth.signOut(); FID.sessao = null; FID.cartao = null; ck.premio = null; renderFid(); carregarFid(); };
+  }
+  sb.auth.onAuthStateChange((ev) => { if (ev === "SIGNED_IN" || ev === "SIGNED_OUT") setTimeout(carregarFid, 0); });
+
+  carregar().then(() => {
+    carregarFid();
+    if (new URLSearchParams(location.search).get("fid")) { try { history.replaceState(null, "", location.pathname); } catch(e) {} setTimeout(() => { if (fidLigado()) abrirFid(); }, 800); }
+  });
   // voltou do link de pagamento da InfinitePay: confirma e leva pro WhatsApp avisar
   (() => { const q = new URLSearchParams(location.search); const n = q.get("pago");
     if (!n || !/^\d+$/.test(n)) return;

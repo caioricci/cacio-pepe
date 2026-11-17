@@ -113,6 +113,7 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
 .btn-wa,.ped a.btn-wa{background:#1F8F4E;color:#fff;text-decoration:none}
 .sim-res{margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--paper);line-height:1.5}
 .sim-add{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:8px}
+.premio-ped{margin-top:8px;padding:8px 12px;border-radius:10px;background:color-mix(in srgb,var(--pistache,#7aa35a) 20%,var(--surface));font-size:14px;font-weight:600}
 .linkpg{border-top:1px dashed var(--line);margin-top:10px;padding-top:10px;display:flex;flex-direction:column;gap:8px}
 .avisos{background:color-mix(in srgb,var(--mortadela) 22%,var(--surface));border-radius:12px;padding:10px 14px;margin:0 0 12px;font-size:14px}
 .avisos ul{margin:6px 0 0;padding-left:18px}
@@ -731,7 +732,7 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
           const taxa = r.gratis ? 0 : Number(r.taxa);
           const num = simDados.numero.trim();
           const endNovo = simDados.livre.trim() || [ [r.rua, num].filter(Boolean).join(", "), r.bairro, r.cidade ].filter(Boolean).join(" – ") + (r.cep ? ` – CEP ${r.cep.replace(/(\d{5})(\d{3})/,"$1-$2")}` : "");
-          const patch = { modo:"Entrega", taxa_entrega:taxa, total:Number(ped.subtotal) + taxa, frete_combinar:false, frete_gratis: r.gratis ? r.gratis.nome : "",
+          const patch = { modo:"Entrega", taxa_entrega:taxa, total:Math.max(0, Number(ped.subtotal) + taxa - Number(ped.desconto||0)), frete_combinar:false, frete_gratis: r.gratis ? r.gratis.nome : "",
             ...(r.km!=null ? { km:Math.round(r.km*10)/10 } : {}), ...(endNovo.length > 5 ? { endereco:endNovo } : {}), atualizado_em:new Date().toISOString() };
           const b = $("sim-add"); b.disabled = true;
           const { error } = await sb.from("pedidos").update(patch).eq("id", ped.id);
@@ -807,6 +808,7 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
       ${p.obs?`<div class="meta">Observação do cliente: ${esc(p.obs)}</div>`:""}
       ${p.nota_interna?`<div class="nota">${esc(p.nota_interna)}</div>`:""}
       ${p.cancelado_motivo&&p.status==="cancelado"?`<div class="meta">${esc(p.cancelado_motivo)}</div>`:""}
+      ${Number(p.desconto)>0?`<div class="premio-ped">🎁 Prêmio fidelidade (${p.premio} carimbos): − ${brl(p.desconto)}</div>`:""}
       <div class="tot"><span>${esc(p.pagamento)}${p.troco?` · troco p/ ${esc(p.troco)}`:""} · ${p.pago?`<b style="color:var(--ok)">pago</b>${p.pago_via?` (${esc(p.pago_via)})`:""}${p.comprovante_url?` · <a href="${esc(p.comprovante_url)}" target="_blank" rel="noopener">comprovante</a>`:""}`:"a receber"}</span><span>${brl(p.total)}</span></div>
       ${!p.pago&&p.status!=="cancelado"&&CFG.infinitepay_handle?`<div class="linkpg" data-linkpg="${p.id}">${p.link_pagamento&&Number(p.link_valor)===Number(p.total)?linkPgHTML(p, p.link_pagamento):`<button class="btn btn-ghost" type="button" data-gerar-link="${p.id}">Gerar link de pagamento (${brl(p.total)})</button>`}</div>`:""}
       <div class="acts">
@@ -916,7 +918,7 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
       const ent = g("modo").value === "Entrega";
       f.querySelectorAll("[data-ent]").forEach(e => e.hidden = !ent);
       const taxa = ent ? Math.max(0, parseFloat(g("taxa_entrega").value)||0) : 0;
-      f.querySelector("[data-total]").textContent = `Total: ${brl(subtotal()+taxa)} · ${paesDoForm()} ciabatta${paesDoForm()===1?"":"s"}`;
+      f.querySelector("[data-total]").textContent = `Total: ${brl(Math.max(0, subtotal()+taxa-Number(p?.desconto||0)))}${Number(p?.desconto)>0?" (com prêmio)":""} · ${paesDoForm()} ciabatta${paesDoForm()===1?"":"s"}`;
       const box = f.querySelector("[data-cap]");
       if (capInfo) {
         const proprio = (!n && p.status!=="cancelado" && p.data===g("data").value && p.janela_id===g("janela_id").value) ? p.paes : 0;
@@ -965,12 +967,12 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
         ({ error } = await sb.from("pedidos").insert({ ...comum, canal:g("canal").value, itens, paes:paesDoForm(), subtotal:sub, total:sub+taxa,
           status:g("status").value, pago:g("pago").checked, tipo:"regular", ...(pre?.troco ? { troco:pre.troco } : {}) }));
       } else {
-        ({ error } = await sb.from("pedidos").update({ ...comum, itens, paes:paesDoForm(), subtotal:sub, total:sub+taxa,
+        ({ error } = await sb.from("pedidos").update({ ...comum, itens, paes:paesDoForm(), subtotal:sub, total:Math.max(0, sub+taxa-Number(p.desconto||0)),
           frete_gratis: taxa>0 ? "" : (ultimoFrete?.gratis?.nome || p.frete_gratis || ""), ...(ultimoFrete?.km!=null ? { km:Math.round(ultimoFrete.km*10)/10 } : {}), frete_combinar: ent && taxa===0 && p.frete_combinar }).eq("id", p.id));
       }
       btn.disabled = false;
       if (error) { toast(U.erro(error)); return; }
-      const dif = !n && p.pago ? Math.round((sub + taxa - Number(p.total)) * 100) / 100 : 0;
+      const dif = !n && p.pago ? Math.round((Math.max(0, sub + taxa - Number(p.desconto||0)) - Number(p.total)) * 100) / 100 : 0;
       toast(n ? "Pedido lançado" : dif > 0 ? `Pedido atualizado. Já estava pago: falta cobrar ${brl(dif)}.` : dif < 0 ? `Pedido atualizado. Já estava pago: devolver ${brl(-dif)}.` : "Pedido atualizado");
       novoAberto = false; pedEdit = null; PRE = null; renderPedidos();
     };
@@ -1240,6 +1242,11 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
         </div>
         <span class="note">Com a chave preenchida, o cliente vê o QR Code e o Pix copia e cola com o valor do pedido. O dinheiro cai direto na conta; confira o comprovante e marque como pago.</span>
         <div class="fl"><label for="c-pg">Formas de pagamento na entrega/retirada</label><input class="input" id="c-pg" value="${esc(CFG.pagamentos.join(", "))}"><span class="note">Separadas por vírgula.</span></div>
+        <b style="margin-top:8px">Cartão fidelidade</b>
+        <label class="toggle"><span>Cartão fidelidade valendo<small>Mostra o cartão no site e dá carimbo quando o pedido é marcado como Entregue. 5 carimbos = 1 panini; 10 = 1 panini + 3 Cinnamon Rolls. Panini + doce no mesmo pedido = 2 carimbos.</small></span><input type="checkbox" id="c-fid" ${CFG.fid_ativo?"checked":""}></label>
+        <div class="fl"><span class="l">Formas de entrar</span>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;margin:4px 0">${[["google","Google"],["apple","Apple"],["email","E-mail (link)"]].map(([k,l])=>`<label><input type="checkbox" id="c-fid-${k}" ${(CFG.fid_logins||["email"]).includes(k)?"checked":""}> ${l}</label>`).join("")}</div>
+          <span class="note">Google e Apple só funcionam depois de ligados no Supabase (Authentication → Providers). Deixe marcado só o que já estiver configurado.</span></div>
         <div class="fl"><label for="c-ip">InfiniteTag da InfinitePay (para links de pagamento)</label><input class="input" id="c-ip" value="${esc(CFG.infinitepay_handle||"")}" placeholder="Ex: cacioepepe" autocomplete="off"><span class="note">É o seu $nome no app da InfinitePay, sem o $. Com ela preenchida, os pedidos ganham o botão "Link de pagamento" com o valor certo, e o pedido fica pago sozinho quando o cliente paga.</span></div>
 
         <b style="margin-top:8px">Frete</b>
@@ -1379,7 +1386,8 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
         frete_base:Math.max(0,parseFloat($("c-fb").value)||0), frete_km:Math.max(0,parseFloat($("c-fk").value)||0),
         frete_min:Math.max(0,parseFloat($("c-fmin").value)||0), frete_raio_km:Math.max(0,parseFloat($("c-fr").value)||0),
         expirar_horas:Math.max(0,parseFloat($("c-exp").value)||0), msg_recuperacao:$("c-rec").value.trim(),
-        infinitepay_handle:$("c-ip").value.trim().replace(/^\$/,"") };
+        infinitepay_handle:$("c-ip").value.trim().replace(/^\$/,""),
+        fid_ativo:$("c-fid").checked, fid_logins:["google","apple","email"].filter(k => $("c-fid-"+k).checked) };
       if (!row.pagamentos.length && !row.pix_chave) { toast("Coloque pelo menos uma forma de pagamento."); return; }
       if (tipo && !row.pix_chave.replace(/\D/g,"") && tipo!=="email" && tipo!=="aleatoria") { toast("Preencha a chave Pix."); return; }
       const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true;

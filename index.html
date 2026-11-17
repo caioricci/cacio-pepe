@@ -268,6 +268,7 @@
   .premio-op[aria-pressed="true"]{border-color:var(--vinho);background:color-mix(in srgb,var(--vinho) 8%,var(--surface))}
   .premio-op .ck{width:24px;height:24px;border-radius:50%;border:2px solid var(--vinho);display:grid;place-items:center;color:var(--vinho);font-weight:800;flex:none}
   .premio-l{color:var(--vinho);font-weight:600}
+  .foot .legal a{color:inherit}
 </style>
 </head>
 <body>
@@ -372,7 +373,7 @@
     if (CFG.logo_url) $("logo").src = CFG.logo_url;
     if (CFG.capa_url) { $("hero").style.backgroundImage = `url("${CFG.capa_url.replace(/"/g,"%22")}")`; $("hero").classList.add("has-capa"); }
     const pags = [...(CFG.pix_chave?["Pix"]:[]), ...(CFG.infinitepay_handle?[PG_LINK]:[]), ...CFG.pagamentos];
-    $("foot").innerHTML = `<span>Retirada: ${esc(endPub())}</span><span>Pagamento: ${esc(pags.join(", "))}</span>`;
+    $("foot").innerHTML = `<span>Retirada: ${esc(endPub())}</span><span>Pagamento: ${esc(pags.join(", "))}</span><span class="legal"><a href="/privacidade">Privacidade</a> · <a href="/termos">Termos de uso</a></span>`;
     if (CFG.loja_lat != null && CFG.loja_lng != null) LOJA = { lat:CFG.loja_lat, lng:CFG.loja_lng };
   }
   async function atualizarAgenda(){
@@ -1027,7 +1028,7 @@
           ${L.includes("apple")?`<button class="btn btn-social apple" type="button" data-oauth="apple"><span class="ap"></span>Entrar com Apple</button>`:""}
           ${L.includes("email")?(FID.emailEnviado?`<p class="fid-ok">Mandamos um link de acesso para <b>${esc(FID.emailEnviado)}</b>. Abra o e-mail neste aparelho e toque no link.</p>`:`<form class="fid-email" id="fid-email"><label for="fid-em">${L.length>1?"Ou entre com seu e-mail":"Entre com seu e-mail"}</label><div><input class="input" id="fid-em" type="email" autocomplete="email" placeholder="voce@email.com" required><button class="btn btn-primary" type="submit">Receber link</button></div></form>`):""}
         </div>
-        <p class="sub">Sem senha. Usamos sua conta só para guardar seus carimbos.</p>${regrasHTML()}</div>`;
+        <p class="sub">Sem senha. Usamos sua conta só para guardar seus carimbos. Ao entrar, você concorda com os <a href="/termos">Termos de uso</a> e a <a href="/privacidade">Política de privacidade</a>.</p>${regrasHTML()}</div>`;
       b.querySelectorAll("[data-oauth]").forEach(x => x.onclick = async () => {
         const { error } = await sb.auth.signInWithOAuth({ provider:x.dataset.oauth, options:{ redirectTo: location.origin + "/?fid=1" } });
         if (error) toast(/not enabled|provider/i.test(error.message) ? "Esse login ainda não está ligado. Use outra opção." : error.message);

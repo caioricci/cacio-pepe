@@ -114,6 +114,7 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
 .sim-res{margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--paper);line-height:1.5}
 .sim-add{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:8px}
 .premio-ped{margin-top:8px;padding:8px 12px;border-radius:10px;background:color-mix(in srgb,var(--pistache,#7aa35a) 20%,var(--surface));font-size:14px;font-weight:600}
+.and{font-size:12px;font-weight:700;color:var(--vinho);background:var(--paper);border-radius:999px;padding:3px 10px}
 .linkpg{border-top:1px dashed var(--line);margin-top:10px;padding-top:10px;display:flex;flex-direction:column;gap:8px}
 .avisos{background:color-mix(in srgb,var(--mortadela) 22%,var(--surface));border-radius:12px;padding:10px 14px;margin:0 0 12px;font-size:14px}
 .avisos ul{margin:6px 0 0;padding-left:18px}
@@ -800,7 +801,7 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
     return `<div class="card ped ${p.status}">
       <div class="ph"><div><div class="num">#${p.numero}</div><div class="who">${esc(p.nome)}</div>
         <div class="meta">${tel?`<a href="https://wa.me/${tel}" target="_blank" rel="noopener">${esc(p.telefone)}</a>`:"sem telefone"}${p.canal!=="site"?` · <b>${CANAIS[p.canal]}</b>`:""}${p.tipo==="extra"?" · venda extra":""}</div></div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><span class="st ${p.status}">${STATUS[p.status]}</span>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><span class="st ${p.status}">${STATUS[p.status]}</span>${p.status==="confirmado"&&p.andamento?`<span class="and">${{preparando:"Em preparo",a_caminho:"Saiu para entrega",pronto:"Pronto p/ retirar"}[p.andamento]}</span>`:""}
         ${p.status==="aguardando"?`<span class="wait ${atraso>=60?"late":""}">há ${haQuanto(p.criado_em)}</span>`:""}</div></div>
       ${p.horario_combinado?`<div class="combo">Horário combinado: <b>${esc(p.horario_combinado)}</b></div>`:""}
       <div class="meta"><b style="color:var(--ink)">${p.modo}</b>${p.modo==="Entrega"?` — ${esc(p.endereco)}<br>Frete: ${p.frete_gratis?`<b style="color:var(--ok)">grátis</b> (${esc(p.frete_gratis)})`:p.frete_combinar?"<b style=\"color:var(--danger)\">a combinar</b>":`${brl(p.taxa_entrega)}${p.km!=null?` (${String(p.km).replace(".",",")} km)`:""}`}`:""}</div>
@@ -815,6 +816,8 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
         ${p.status==="aguardando"&&tel?`<a class="btn btn-wa" href="https://wa.me/${tel}?text=${encodeURIComponent(msgRecuperacao(p))}" target="_blank" rel="noopener">Chamar no WhatsApp</a>`:""}
         ${(p.status==="aguardando"||p.status==="confirmado")&&tel?`<a class="btn btn-wa" href="https://wa.me/${tel}?text=${encodeURIComponent(msgResumo(p))}" target="_blank" rel="noopener">Mandar resumo do pedido</a>`:""}
         ${p.status==="aguardando"?`<button class="btn btn-primary" type="button" data-act="confirmado" data-id="${p.id}">Confirmar</button>`:""}
+        ${p.status==="confirmado"&&!p.andamento?`<button class="btn btn-ghost" type="button" data-act="and:preparando" data-id="${p.id}">Em preparo</button>`:""}
+        ${p.status==="confirmado"&&p.andamento==="preparando"?`<button class="btn btn-ghost" type="button" data-act="and:${p.modo==="Entrega"?"a_caminho":"pronto"}" data-id="${p.id}">${p.modo==="Entrega"?"Saiu para entrega":"Pronto p/ retirar"}</button>`:""}
         ${p.status==="confirmado"?`<button class="btn btn-primary" type="button" data-act="entregue" data-id="${p.id}">Marcar entregue</button>`:""}
         ${p.status!=="cancelado"?`<button class="btn btn-ghost" type="button" data-act="pago" data-v="${!p.pago}" data-id="${p.id}">${p.pago?"Desmarcar pago":"Marcar pago"}</button>`:""}
         ${p.modo==="Entrega"&&!p.pago&&p.status!=="cancelado"&&p.status!=="entregue"?`<button class="btn btn-ghost" type="button" data-frete="${p.id}">${Number(p.taxa_entrega)>0?"Refazer frete":"Calcular frete"}</button>`:""}
@@ -981,7 +984,9 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
   async function acaoPedido(b){
     const id = b.dataset.id, a = b.dataset.act;
     if (a==="cancelar" && b.dataset.sure!=="1") { b.dataset.sure="1"; b.textContent="Toque de novo para cancelar"; setTimeout(()=>{ if(b.isConnected){ b.dataset.sure=""; b.textContent="Cancelar"; } },4000); return; }
-    const patch = a==="pago" ? { pago: b.dataset.v==="true" } : { status: a==="cancelar" ? "cancelado" : a, cancelado_motivo: a==="cancelar" ? "Cancelado pela equipe" : "" };
+    const patch = a.startsWith("and:") ? { andamento: a.slice(4), andamento_em: new Date().toISOString() }
+      : a==="pago" ? { pago: b.dataset.v==="true" }
+      : { status: a==="cancelar" ? "cancelado" : a, cancelado_motivo: a==="cancelar" ? "Cancelado pela equipe" : "", ...(a==="confirmado" ? { andamento:null } : {}) };
     patch.atualizado_em = new Date().toISOString();
     b.disabled = true;
     const { error } = await sb.from("pedidos").update(patch).eq("id", id);

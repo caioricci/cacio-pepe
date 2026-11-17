@@ -273,6 +273,33 @@
   .foot .legal a{color:inherit}
   .fid .fid-h-topo{margin-top:6px}
   .fid-previa{margin-top:22px}
+  /* meus pedidos */
+  .fid-abas{display:flex;gap:4px;background:var(--paper);border-radius:999px;padding:4px;margin:0 0 16px}
+  .fid-abas button{flex:1;border:0;background:transparent;border-radius:999px;padding:9px 10px;font:inherit;font-weight:600;font-size:14px;color:var(--muted);cursor:pointer}
+  .fid-abas button[aria-selected="true"]{background:var(--surface);color:var(--vinho);box-shadow:0 1px 3px rgba(43,26,23,.12)}
+  .ped-h{font-family:"Marcellus",serif;font-weight:400;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--vinho);margin:18px 0 10px}
+  .meu-ped{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px}
+  .meu-ped.cancelado{opacity:.6}
+  .meu-ped header{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+  .meu-ped header b{font-family:"Marcellus",serif;font-weight:400;font-size:18px;color:var(--vinho);display:block}
+  .meu-ped header span{font-size:13px;color:var(--muted)}
+  .meu-ped .st{flex:none;font-size:12px!important;font-weight:700;color:var(--bordo-2)!important;background:color-mix(in srgb,var(--ouro-2) 30%,var(--surface));border-radius:999px;padding:4px 10px}
+  .meu-ped .linha{list-style:none;padding:0;margin:16px 0 4px;display:flex;flex-direction:column;gap:0}
+  .meu-ped .linha li{position:relative;padding:0 0 14px 26px;font-size:14px;color:var(--muted)}
+  .meu-ped .linha li:last-child{padding-bottom:0}
+  .meu-ped .linha li span{position:absolute;left:0;top:3px;width:13px;height:13px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface)}
+  .meu-ped .linha li:not(:last-child)::after{content:"";position:absolute;left:6px;top:17px;bottom:2px;width:1.5px;background:var(--line)}
+  .meu-ped .linha li.feito{color:var(--ink)}
+  .meu-ped .linha li.feito span{background:var(--ouro-2);border-color:var(--ouro-2)}
+  .meu-ped .linha li.feito::after{background:var(--ouro-2)!important}
+  .meu-ped .linha li.agora{color:var(--vinho);font-weight:700}
+  .meu-ped .linha li.agora span{background:var(--vinho);border-color:var(--vinho);box-shadow:0 0 0 4px color-mix(in srgb,var(--vinho) 18%,transparent)}
+  .meu-ped .itens{margin:12px 0 0;font-size:14px;line-height:1.55}
+  .meu-ped .itens small{color:var(--muted)}
+  .meu-ped footer{display:flex;justify-content:space-between;gap:10px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+  .meu-ped footer b{color:var(--ink);font-size:15px}
+  .meu-ped .pagar{width:100%;margin-top:12px}
+  .ped-vazio{text-align:center;padding:10px 0}
 </style>
 </head>
 <body>
@@ -864,6 +891,7 @@
             ${r.frete_combinar?`<p>O valor fica em aberto porque a entrega será combinada no WhatsApp.</p>`:""}
           </div>
         </div>
+        ${FID.sessao?`<button class="btn btn-ghost" type="button" data-acompanhar>Acompanhar meus pedidos</button>`:""}
         <button class="btn btn-ghost" type="button" data-close>Voltar ao cardápio</button>
       </div>`;
       const liberarPix = () => { $("ck-pix").classList.remove("pix-trava"); $("ck-trava").hidden = true; };
@@ -892,6 +920,7 @@
             </div>
           </div>
         </div>
+        ${FID.sessao?`<button class="btn btn-ghost" type="button" data-acompanhar>Acompanhar meus pedidos</button>`:""}
         <button class="btn btn-ghost" type="button" data-close>Voltar ao cardápio</button>
       </div>`;
       $("ck-wa").addEventListener("click", () => setTimeout(() => { $("ck-pix").classList.remove("pix-trava"); $("ck-trava").hidden = true; }, 300));
@@ -909,6 +938,7 @@
         <h3>Falta só mandar no WhatsApp</h3>
         <p>Seu pedido para <b>${U.diaLongo(sel.data)}, ${esc(sel.turno.toLowerCase())}</b> está reservado. Envie a mensagem no WhatsApp para a gente confirmar. Se ela não abriu sozinha, toque no botão.</p>
         <a class="btn btn-primary" href="${esc(link)}" target="_blank" rel="noopener">Abrir WhatsApp com o pedido</a>
+        ${FID.sessao?`<button class="btn btn-ghost" type="button" data-acompanhar>Acompanhar meus pedidos</button>`:""}
         <button class="btn btn-ghost" type="button" data-close>Voltar ao cardápio</button>
       </div>`;
       setTimeout(() => { window.location.href = link; }, 400);
@@ -927,7 +957,7 @@
   document.addEventListener("keydown", e => { if(e.key==="Escape"){ if(!$("fid-scrim").hidden) fechar("fid-scrim"); else if(!$("pd-scrim").hidden) fechar("pd-scrim"); else if(!$("ck-scrim").hidden) fechar("ck-scrim"); } });
 
   // ---------- cartão fidelidade ----------
-  const FID = { sessao:null, cartao:null, cliente:null, carregando:false, emailEnviado:"" };
+  const FID = { sessao:null, cartao:null, cliente:null, carregando:false, emailEnviado:"", aba:"passaporte", pedidos:null };
   // desenhos do cartão (traço próprio): panini em traço vinho para o selo dourado, ramo de oliva, manjericão e presente
   const PANINI_SVG = `<svg viewBox="0 0 48 34" fill="none" stroke="#5A1422" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 14c0-6.5 8.5-10.5 19-10.5S43 7.5 43 14z" fill="rgba(91,20,34,.12)"/><path d="M11 9.5c2-1.3 4-1.3 6 0M21.5 7.3c2-1 4-1 6 .3M31.5 9c1.8-.9 3.6-.6 5.2.7"/><path d="M4 16.5c3 2 5 2 7.5 0 2.5 2 5 2 7.5 0 2.5 2 5 2 7.5 0 2.5 2 5 2 7.5 0 2.5 2 4.5 2 8 0"/><path d="M5 21h38"/><path d="M5 24.5h38c0 3.8-8.5 6-19 6s-19-2.2-19-6z" fill="rgba(91,20,34,.12)"/></svg>`;
   const STICKERS = ["parma","mortadela","salame","mortadela-close"];
@@ -1001,7 +1031,49 @@
     if (!$("fid-scrim").hidden) renderFid();
     if (!$("ck-scrim").hidden && !ck.finalizado) renderCheckout();
   }
-  function abrirFid(){ renderFid(); abrir("fid-scrim"); }
+  function abrirFid(aba){ if (aba) FID.aba = aba; renderFid(); abrir("fid-scrim"); }
+  // ---------- meus pedidos ----------
+  $("fid-body").addEventListener("click", e => { if (e.target.closest("[data-close]")) fechar("fid-scrim"); });
+  $("ck-body").addEventListener("click", e => { if (e.target.closest("[data-acompanhar]")) { fechar("ck-scrim"); FID.pedidos = null; abrirFid("pedidos"); } });
+  function ligarAbas(b){ b.querySelectorAll("[data-aba]").forEach(x => x.onclick = () => { FID.aba = x.dataset.aba; renderFid(); b.scrollTop = 0; }); }
+  async function carregarMeusPedidos(){
+    const { data, error } = await sb.rpc("meus_pedidos");
+    if (!error) FID.pedidos = data || [];
+    else FID.pedidosErro = true;
+    const el = $("fid-peds"); if (el) el.innerHTML = pedidosHTML();
+  }
+  setInterval(() => { if (!$("fid-scrim").hidden && FID.aba === "pedidos" && FID.sessao && !document.hidden) carregarMeusPedidos(); }, 30000);
+  function etapasPedido(p){
+    const ent = p.modo === "Entrega";
+    const ordem = ["recebido","confirmado","preparando", ent ? "a_caminho" : "pronto", "entregue"];
+    const nomes = { recebido:"Pedido recebido", confirmado:"Confirmado", preparando:"Em preparo", a_caminho:"Saiu para entrega", pronto:"Pronto para retirar", entregue: ent ? "Entregue" : "Retirado" };
+    const atual = p.status === "entregue" ? "entregue" : p.andamento ? p.andamento : p.status === "confirmado" ? "confirmado" : "recebido";
+    const i = ordem.indexOf(atual);
+    return { ordem, nomes, i: i < 0 ? 0 : i };
+  }
+  function pedidosHTML(){
+    if (FID.pedidos == null) return `<p class="sub">${FID.pedidosErro ? "Não deu para carregar seus pedidos agora." : "Carregando seus pedidos…"}</p>`;
+    if (!FID.pedidos.length) return `<div class="ped-vazio"><h3>Nenhum pedido ainda</h3><p class="lead">Os pedidos que você fizer com esta conta, ou pelo WhatsApp com o celular cadastrado no passaporte, aparecem aqui.</p><button class="btn btn-primary" type="button" data-close>Ver cardápio</button></div>`;
+    const hoje = U.hojeSP();
+    const ativos = FID.pedidos.filter(p => p.status !== "cancelado" && p.status !== "entregue");
+    const antigos = FID.pedidos.filter(p => !ativos.includes(p));
+    const card = (p, aberto) => {
+      const e = etapasPedido(p);
+      const quando = `${U.diaLongo(p.data)}${p.turno?`, ${p.turno.toLowerCase()}`:""}${p.horario_combinado?` · ${p.horario_combinado}`:""}`;
+      const itens = (p.itens||[]).map(i => `${i.qtd}× ${esc(i.nome)}${i.opcao?` <small>${esc(i.opcao.split(";").map(x=>x.split(":").pop().trim()).join(", "))}</small>`:""}`).join("<br>");
+      return `<article class="meu-ped${p.status==="cancelado"?" cancelado":""}">
+        <header><div><b>Pedido #${p.numero}</b><span>${quando}</span></div>
+          <span class="st">${p.status==="cancelado"?"Cancelado":e.nomes[e.ordem[e.i]]}</span></header>
+        ${aberto && p.status!=="cancelado" ? `<ol class="linha">${e.ordem.map((k,j)=>`<li class="${j<e.i?"feito":j===e.i?"agora":""}"><span></span>${e.nomes[k]}</li>`).join("")}</ol>` : ""}
+        <div class="itens">${itens}</div>
+        <footer><span>${p.modo} · ${esc(p.pagamento||"")}${p.pago?" · pago":""}${p.carimbos?` · +${p.carimbos} carimbo${p.carimbos>1?"s":""}`:""}</span><b>${brl(p.total)}</b></footer>
+        ${p.link_pagamento ? `<a class="btn btn-primary pagar" href="${esc(p.link_pagamento)}">Pagar ${brl(p.total)}</a>` : ""}
+      </article>`;
+    };
+    return `${ativos.length?`<h4 class="ped-h">Em andamento</h4>${ativos.map(p=>card(p,true)).join("")}`:""}
+      ${antigos.length?`<h4 class="ped-h">Anteriores</h4>${antigos.map(p=>card(p,false)).join("")}`:""}
+      <p class="sub" style="margin-top:14px">Atualiza sozinho a cada 30 segundos.</p>`;
+  }
   $("fid-btn").onclick = abrirFid;
   function regrasHTML(){
     return `<div class="regras">
@@ -1047,11 +1119,13 @@
       };
       return;
     }
+    const abas = `<div class="fid-abas" role="tablist"><button type="button" role="tab" data-aba="passaporte" aria-selected="${FID.aba!=="pedidos"}">Passaporte</button><button type="button" role="tab" data-aba="pedidos" aria-selected="${FID.aba==="pedidos"}">Meus pedidos</button></div>`;
+    if (FID.aba === "pedidos") { b.innerHTML = `<div class="gutter fid">${abas}<div id="fid-peds">${pedidosHTML()}</div></div>`; ligarAbas(b); carregarMeusPedidos(); return; }
     const c = FID.cartao || { atuais:0, total:0 };
     const at = Math.max(0, c.atuais || 0);
     const cli = FID.cliente || {};
     const premio = (k, t, sub) => `<div class="fid-premio"><span class="selo" aria-hidden="true">${k}</span><div><b>${t}</b><small>${sub}</small></div></div>`;
-    b.innerHTML = `<div class="gutter fid">
+    b.innerHTML = `<div class="gutter fid">${abas}
       ${cartaoHTML({ atuais:at, ciclo:c.ciclo||0, nome:cli.nome })}
       <p class="fid-cont">${at>10?`+${at-10} carimbo${at-10>1?"s":""} já guardado${at-10>1?"s":""} para o próximo passaporte · `:""}${c.pendentes?`${c.pendentes} pedido${c.pendentes>1?"s":""} a caminho de virar carimbo`:""}</p>
       ${c.premio10?premio(10, "Você ganhou 1 panini + 3 Cinnamon Rolls","Coloque no carrinho e escolha “Usar prêmio” no pedido."):""}
@@ -1066,6 +1140,7 @@
       </form>
       <button class="btn btn-ghost sair" type="button" id="fid-sair">Sair da conta</button>
     </div>`;
+    ligarAbas(b);
     $("fid-perfil").onsubmit = async e => {
       e.preventDefault();
       const nome = $("fid-nome").value.trim(), telefone = $("fid-tel").value.trim();
@@ -1073,7 +1148,7 @@
       if (error) { toast(error.message); return; }
       FID.cliente = { ...FID.cliente, nome, telefone }; if (nome) D.nome = nome; if (telefone) D.tel = telefone; saveDados(); toast("Salvo"); renderFid();
     };
-    $("fid-sair").onclick = async () => { await sb.auth.signOut(); FID.sessao = null; FID.cartao = null; ck.premio = null; renderFid(); carregarFid(); };
+    $("fid-sair").onclick = async () => { await sb.auth.signOut(); FID.sessao = null; FID.cartao = null; FID.pedidos = null; FID.aba = "passaporte"; ck.premio = null; renderFid(); carregarFid(); };
   }
   sb.auth.onAuthStateChange((ev) => { if (ev === "SIGNED_IN" || ev === "SIGNED_OUT") setTimeout(carregarFid, 0); });
 
@@ -1095,6 +1170,7 @@
         <p>Obrigado! O pagamento já chegou pra gente, não precisa mandar comprovante.</p>
         <p class="sub" id="pg-auto">Abrindo o WhatsApp para você avisar a gente…</p>
         <a class="btn btn-primary" href="${esc(wa)}" id="pg-wa">Avisar no WhatsApp</a>
+        ${FID.sessao?`<button class="btn btn-ghost" type="button" data-acompanhar>Acompanhar meus pedidos</button>`:""}
         <button class="btn btn-ghost" type="button" data-close>Voltar ao cardápio</button>
       </div>`;
       $("ck-foot").hidden = true; abrir("ck-scrim");

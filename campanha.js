@@ -4,7 +4,7 @@ window.Campanha = function (ctx) {
   const { $, toast } = ctx;
   const { brl, esc } = U;
   const SITE = "https://cacioepepe.netlify.app";
-  let DADOS = null, filtro = "todos", busca = "", editandoMsgs = false;
+  let DADOS = null, filtro = "todos", busca = "", editandoMsgs = false, aberto = null, HIST = {};
 
   const PADRAO = {
     quase: "Oi, {nome}! Aqui é da Cacio & Pepe 🥪\nVocê já tem {carimbos} carimbos no seu Passaporte do panini. Falta só {faltam} para ganhar {premio}! Bora garantir? {link}",
@@ -38,6 +38,12 @@ window.Campanha = function (ctx) {
       .replaceAll("{faltam}", String(faltam(c ?? {}))).replaceAll("{premio}", nomePremio(pd || proxMeta(c ?? {})))
       .replaceAll("{link}", SITE);
   }
+  // botão que pede um segundo toque antes de ações que apagam
+  function confirmar(b, txt, fn) {
+    if (b.dataset.ok) { fn(); return; }
+    const orig = b.textContent; b.dataset.ok = "1"; b.textContent = txt;
+    setTimeout(() => { if (b.isConnected) { delete b.dataset.ok; b.textContent = orig; } }, 4000);
+  }
   const linkWa = (tel, texto) => `https://wa.me/${tel}?text=${encodeURIComponent(texto)}`;
 
   const FILTROS = [
@@ -68,9 +74,31 @@ window.Campanha = function (ctx) {
       <div class="acts">
         ${tel ? `<a class="btn btn-wa" href="${linkWa(tel, texto)}" target="_blank" rel="noopener">Mandar mensagem</a>` : `<span class="note">Sem WhatsApp cadastrado</span>`}
         <button class="small-btn" type="button" data-carimbo="${c.id}" data-q="1">+1 carimbo</button>
-        ${c.total > 0 ? `<button class="small-btn rm" type="button" data-carimbo="${c.id}" data-q="-1">−1</button>` : ""}
+        <button class="small-btn" type="button" data-editar="${c.id}">${aberto === c.id ? "Fechar" : "Editar"}</button>
       </div>
+      ${aberto === c.id ? editorCliente(c) : ""}
     </div>`;
+  }
+
+  function editorCliente(c) {
+    const h = HIST[c.id];
+    return `<div class="cp-ed">
+      <form class="cp-form" data-form="${c.id}">
+        <div class="f2"><div class="fl"><label for="cpn-${c.id}">Nome</label><input class="input" id="cpn-${c.id}" name="nome" maxlength="80" value="${esc(c.nome || "")}"></div>
+        <div class="fl"><label for="cpt-${c.id}">WhatsApp</label><input class="input" id="cpt-${c.id}" name="telefone" inputmode="tel" maxlength="20" value="${esc(c.telefone || "")}"></div></div>
+        <div class="acts"><button class="btn btn-primary" type="submit">Salvar cadastro</button></div>
+      </form>
+      <div class="cp-hist"><b>Carimbos</b>
+        ${h == null ? `<p class="note">Carregando…</p>` : h.length ? `<ul>${h.map(k => `<li><span class="${k.qtd < 0 ? "neg" : ""}">${k.qtd > 0 ? "+" : ""}${k.qtd}</span><span>${k.numero ? `Pedido #${k.numero}` : esc(k.motivo || "Ajuste")}<small>${new Date(k.criado_em).toLocaleDateString("pt-BR")}${k.numero && k.motivo ? ` · ${esc(k.motivo)}` : ""}</small></span><button class="small-btn rm" type="button" data-rmk="${k.id}" data-cli="${c.id}">Remover</button></li>`).join("")}</ul>` : `<p class="note">Nenhum carimbo ainda.</p>`}
+        <form class="cp-add" data-add="${c.id}"><input class="input" name="motivo" maxlength="80" placeholder="Motivo (opcional), ex: promoção de sexta"><input class="input" name="qtd" type="number" min="1" max="10" value="1" aria-label="Quantidade"><button class="btn btn-ghost" type="submit">Dar carimbo</button></form>
+        <p class="note">Remover um carimbo de pedido não muda o pedido. Se o pedido for marcado como entregue de novo, o carimbo volta.</p>
+      </div>
+      <div class="cp-del"><button class="btn btn-ghost perigo" type="button" data-excluir="${c.id}">Excluir cadastro</button><span class="note">Apaga a conta, os carimbos e os prêmios desse cliente. Os pedidos continuam no sistema.</span></div>
+    </div>`;
+  }
+  async function carregarHist(id) {
+    const { data, error } = await sb.from("carimbos").select("id,qtd,motivo,criado_em,pedido_id,pedidos(numero)").eq("cliente_id", id).order("criado_em", { ascending: false });
+    HIST[id] = error ? [] : (data || []).map(k => ({ ...k, numero: k.pedidos?.numero }));
   }
 
   function linhaConvite(x) {
@@ -125,11 +153,38 @@ window.Campanha = function (ctx) {
     $("cp-msg-ed").onclick = () => { editandoMsgs = !editandoMsgs; render(); };
     el.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { filtro = b.dataset.f; render(); });
     $("cp-busca").oninput = e => { busca = e.target.value; const pos = e.target.selectionStart; render().then(() => { const i = $("cp-busca"); i.focus(); i.setSelectionRange(pos, pos); }); };
+    el.querySelectorAll("[data-editar]").forEach(b => b.onclick = async () => {
+      const id = b.dataset.editar;
+      if (aberto === id) { aberto = null; render(); return; }
+      aberto = id; delete HIST[id]; await render(); await carregarHist(id); render();
+    });
+    el.querySelectorAll("[data-form]").forEach(f => f.onsubmit = async e => {
+      e.preventDefault(); const id = f.dataset.form;
+      const { error } = await sb.from("clientes").update({ nome: f.nome.value.trim(), telefone: f.telefone.value.trim() }).eq("user_id", id);
+      if (error) { toast(U.erro(error)); return; }
+      toast("Cadastro salvo"); await carregar(); render();
+    });
+    el.querySelectorAll("[data-rmk]").forEach(b => b.onclick = () => confirmar(b, "Toque de novo para remover", async () => {
+      const { error } = await sb.from("carimbos").delete().eq("id", b.dataset.rmk);
+      if (error) { toast(U.erro(error)); return; }
+      toast("Carimbo removido"); await Promise.all([carregar(), carregarHist(b.dataset.cli)]); render();
+    }));
+    el.querySelectorAll("[data-add]").forEach(f => f.onsubmit = async e => {
+      e.preventDefault(); const id = f.dataset.add, q = Math.min(10, Math.max(1, parseInt(f.qtd.value, 10) || 1));
+      const { error } = await sb.from("carimbos").insert({ cliente_id: id, qtd: q, motivo: f.motivo.value.trim() || "Carimbo dado pela equipe" });
+      if (error) { toast(U.erro(error)); return; }
+      toast(q > 1 ? `${q} carimbos adicionados` : "Carimbo adicionado"); await Promise.all([carregar(), carregarHist(id)]); render();
+    });
+    el.querySelectorAll("[data-excluir]").forEach(b => b.onclick = () => confirmar(b, "Toque de novo para apagar de vez", async () => {
+      const { error } = await sb.rpc("excluir_cliente", { p_uid: b.dataset.excluir });
+      if (error) { toast(U.erro(error)); return; }
+      toast("Cadastro excluído"); aberto = null; await carregar(); render();
+    }));
     el.querySelectorAll("[data-carimbo]").forEach(b => b.onclick = async () => {
       const q = +b.dataset.q; b.disabled = true;
       const { error } = await sb.from("carimbos").insert({ cliente_id: b.dataset.carimbo, qtd: q, motivo: q > 0 ? "Carimbo dado pela equipe" : "Carimbo retirado pela equipe" });
       if (error) { b.disabled = false; toast(U.erro(error)); return; }
-      toast(q > 0 ? "Carimbo adicionado" : "Carimbo retirado"); DADOS = null; render();
+      toast("Carimbo adicionado"); await carregar(); if (aberto === b.dataset.carimbo) await carregarHist(aberto); render();
     });
     if (editandoMsgs) {
       const f = $("cp-msgs");

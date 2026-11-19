@@ -1,0 +1,147 @@
+// Aba Campanha do painel Produzione: cadastros do Passaporte do panini, carimbos, métricas
+// e mensagens prontas no WhatsApp para cada grupo de clientes.
+window.Campanha = function (ctx) {
+  const { $, toast } = ctx;
+  const { brl, esc } = U;
+  const SITE = "https://cacioepepe.netlify.app";
+  let DADOS = null, filtro = "todos", busca = "", editandoMsgs = false;
+
+  const PADRAO = {
+    quase: "Oi, {nome}! Aqui é da Cacio & Pepe 🥪\nVocê já tem {carimbos} carimbos no seu Passaporte do panini. Falta só {faltam} para ganhar {premio}! Bora garantir? {link}",
+    premio: "Oi, {nome}! Aqui é da Cacio & Pepe 🥪\nSeu Passaporte do panini completou {carimbos} carimbos e você ganhou {premio}! É só fazer o pedido pelo site e tocar em \"Usar prêmio\" no carrinho: {link}",
+    sem_pedido: "Oi, {nome}! Aqui é da Cacio & Pepe 🥪\nVi que você criou seu Passaporte do panini. Seu primeiro pedido já vale carimbo, e com 5 carimbos o panini é por nossa conta. As encomendas da semana estão abertas: {link}",
+    sumido: "Oi, {nome}! Saudade de você por aqui 🥪\nSeu Passaporte do panini está com {carimbos} carimbo(s), faltam {faltam} para o próximo prêmio. As encomendas da semana já abriram: {link}",
+    convite: "Oi, {nome}! Aqui é da Cacio & Pepe 🥪\nAgora a gente tem o Passaporte do panini: cada pedido vale carimbo e com 5 carimbos você ganha um panini. Panini + Cinnamon Roll no mesmo pedido vale carimbo em dobro. É só entrar com seu Google no site: {link}",
+    geral: "Oi, {nome}! Aqui é da Cacio & Pepe 🥪\n{link}",
+  };
+  const msgs = () => ({ ...PADRAO, ...(ctx.cfg().fid_msgs || {}) });
+
+  const telWa = t => { let d = String(t || "").replace(/\D/g, ""); if (d.length >= 12 && d.startsWith("55")) d = d.slice(2); return d.length >= 10 ? "55" + d : ""; };
+  const primeiro = n => (String(n || "").trim().split(/\s+/)[0] || "tudo bem");
+  const diasDesde = d => d ? Math.floor((new Date(U.hojeSP() + "T12:00:00") - new Date(String(d).slice(0, 10) + "T12:00:00")) / 864e5) : null;
+  const premioDisp = c => c.atuais >= 10 ? 10 : (c.atuais >= 5 && !c.usou5 ? 5 : 0);
+  const proxMeta = c => c.atuais < 5 && !c.usou5 ? 5 : 10;
+  const faltam = c => Math.max(0, proxMeta(c) - c.atuais);
+  const nomePremio = k => k === 10 ? "1 panini + 3 Cinnamon Rolls" : "1 panini";
+  // em que grupo cada cliente cai (para filtrar e escolher a mensagem)
+  function grupo(c) {
+    if (premioDisp(c)) return "premio";
+    if (!c.pedidos) return "sem_pedido";
+    if (faltam(c) <= 2) return "quase";
+    const d = diasDesde(c.ultimo);
+    if (d != null && d >= 21) return "sumido";
+    return "geral";
+  }
+  function preencher(tpl, c) {
+    const pd = premioDisp(c);
+    return tpl.replaceAll("{nome}", primeiro(c.nome)).replaceAll("{carimbos}", String(Math.max(0, c.atuais ?? 0)))
+      .replaceAll("{faltam}", String(faltam(c ?? {}))).replaceAll("{premio}", nomePremio(pd || proxMeta(c ?? {})))
+      .replaceAll("{link}", SITE);
+  }
+  const linkWa = (tel, texto) => `https://wa.me/${tel}?text=${encodeURIComponent(texto)}`;
+
+  const FILTROS = [
+    ["todos", "Todos"], ["premio", "Com prêmio"], ["quase", "Quase lá"], ["sem_pedido", "Sem pedido ainda"],
+    ["sumido", "Sumidos (21+ dias)"], ["convite", "Clientes sem passaporte"],
+  ];
+
+  async function carregar() {
+    const { data, error } = await sb.rpc("painel_fidelidade");
+    if (error) { toast(U.erro(error)); return; }
+    DADOS = data;
+  }
+
+  function bolinhas(c) {
+    const at = Math.min(10, Math.max(0, c.atuais));
+    return `<span class="cp-dots" aria-label="${at} de 10 carimbos">${Array.from({ length: 10 }, (_, i) => `<i class="${i < at ? "on" : ""}${i === 4 || i === 9 ? " meta" : ""}"></i>`).join("")}</span>`;
+  }
+
+  function linhaCliente(c) {
+    const g = grupo(c), tel = telWa(c.telefone), pd = premioDisp(c);
+    const d = diasDesde(c.ultimo);
+    const texto = preencher(msgs()[g], c);
+    return `<div class="cp-cli">
+      <div class="cp-top"><div class="cp-nome"><b>${esc(c.nome || "Sem nome")}</b><small>${esc(c.email || "")}${c.telefone ? ` · ${esc(c.telefone)}` : ""}</small></div>
+        ${pd ? `<span class="pill extra">Prêmio de ${pd} liberado</span>` : g === "quase" ? `<span class="pill ok">Falta${faltam(c) > 1 ? "m" : ""} ${faltam(c)}</span>` : g === "sumido" ? `<span class="pill off">Sem pedir há ${d} dias</span>` : g === "sem_pedido" ? `<span class="pill">Sem pedido</span>` : ""}</div>
+      <div class="cp-mid">${bolinhas(c)}<span class="cp-num"><b>${Math.max(0, c.atuais)}</b>/10${c.ciclo ? ` · cartão ${c.ciclo + 1}` : ""}</span></div>
+      <div class="cp-info">${c.pedidos} pedido${c.pedidos === 1 ? "" : "s"}${c.ultimo ? ` · último ${U.ddmm(c.ultimo)}` : ""}${Number(c.gasto) ? ` · ${brl(c.gasto)} entregues` : ""}${c.resgates ? ` · ${c.resgates} prêmio${c.resgates > 1 ? "s" : ""} usado${c.resgates > 1 ? "s" : ""}` : ""} · desde ${new Date(c.desde).toLocaleDateString("pt-BR")}</div>
+      <div class="acts">
+        ${tel ? `<a class="btn btn-wa" href="${linkWa(tel, texto)}" target="_blank" rel="noopener">Mandar mensagem</a>` : `<span class="note">Sem WhatsApp cadastrado</span>`}
+        <button class="small-btn" type="button" data-carimbo="${c.id}" data-q="1">+1 carimbo</button>
+        ${c.total > 0 ? `<button class="small-btn rm" type="button" data-carimbo="${c.id}" data-q="-1">−1</button>` : ""}
+      </div>
+    </div>`;
+  }
+
+  function linhaConvite(x) {
+    const tel = telWa(x.telefone);
+    return `<div class="cp-cli">
+      <div class="cp-top"><div class="cp-nome"><b>${esc(x.nome || "Cliente")}</b><small>${esc(x.telefone)}</small></div><span class="pill">Sem passaporte</span></div>
+      <div class="cp-info">${x.pedidos} pedido${x.pedidos === 1 ? "" : "s"} nos últimos 90 dias · último ${U.ddmm(x.ultimo)}</div>
+      <div class="acts">${tel ? `<a class="btn btn-wa" href="${linkWa(tel, preencher(msgs().convite, { nome: x.nome, atuais: 0, usou5: false }))}" target="_blank" rel="noopener">Convidar pro passaporte</a>` : ""}</div>
+    </div>`;
+  }
+
+  function editorMsgs() {
+    const m = msgs();
+    const rot = { premio: "Prêmio liberado", quase: "Quase lá", sem_pedido: "Cadastrou e ainda não pediu", sumido: "Sumidos", convite: "Convite (clientes sem passaporte)", geral: "Demais clientes" };
+    return `<form class="card" id="cp-msgs"><div class="jh"><b>Mensagens prontas</b></div>
+      <p class="note" style="margin:0 0 10px">Use {nome}, {carimbos}, {faltam}, {premio} e {link}. Cada botão "Mandar mensagem" já escolhe o texto do grupo do cliente.</p>
+      ${Object.keys(rot).map(k => `<div class="fl"><label for="cpm-${k}">${rot[k]}</label><textarea class="input" id="cpm-${k}" data-k="${k}" rows="3">${esc(m[k])}</textarea></div>`).join("")}
+      <div class="row-act"><button class="btn btn-ghost" type="button" id="cpm-padrao">Voltar ao padrão</button><button class="btn btn-primary" type="submit">Salvar mensagens</button></div>
+    </form>`;
+  }
+
+  async function render() {
+    const el = $("t-campanha");
+    if (!DADOS) { el.innerHTML = `<div class="card"><p class="note">Carregando…</p></div>`; await carregar(); if (!DADOS) return; }
+    const M = DADOS.metricas || {}, C = DADOS.clientes || [], S = DADOS.sem_cadastro || [];
+    const cont = { todos: C.length, convite: S.length };
+    C.forEach(c => { const g = grupo(c); cont[g] = (cont[g] || 0) + 1; });
+    const q = U.semAcento(busca).toLowerCase();
+    const bate = c => !q || U.semAcento(`${c.nome} ${c.email} ${c.telefone}`).toLowerCase().includes(q);
+    const lista = filtro === "convite" ? S.filter(bate) : C.filter(c => (filtro === "todos" || grupo(c) === filtro) && bate(c));
+    const pct = M.ped_total30 ? Math.round(M.ped_membros30 / M.ped_total30 * 100) : 0;
+    const ativo = ctx.cfg().fid_ativo;
+    el.innerHTML = `
+      <div class="bar"><h2>Campanha · Passaporte do panini</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-ghost" type="button" id="cp-msg-ed">${editandoMsgs ? "Fechar mensagens" : "Editar mensagens"}</button><button class="btn btn-ghost" type="button" id="cp-atual">Atualizar</button></div></div>
+      ${ativo ? "" : `<div class="card" style="border-color:var(--warn,#c9862a)"><b>O cartão fidelidade está desligado.</b> <span class="note">Ligue em Ajustes → Cartão fidelidade valendo para os clientes verem o passaporte.</span></div>`}
+      <div class="kpis">
+        <div class="kpi"><span>Cadastros</span><b>${M.cadastros || 0}</b><small class="note">+${M.cadastros7 || 0} nos últimos 7 dias</small></div>
+        <div class="kpi"><span>Com WhatsApp</span><b>${M.com_tel || 0}</b><small class="note">dá pra mandar mensagem</small></div>
+        <div class="kpi"><span>Pedidos de membros (30 dias)</span><b>${M.ped_membros30 || 0}</b><small class="note">${pct}% dos ${M.ped_total30 || 0} pedidos</small></div>
+        <div class="kpi"><span>Faturamento de membros (30 dias)</span><b>${brl(M.receita_membros30)}</b><small class="note">pedidos entregues</small></div>
+        <div class="kpi"><span>Carimbos dados</span><b>${M.carimbos || 0}</b><small class="note">desde o início</small></div>
+        <div class="kpi"><span>Prêmios usados</span><b>${(M.resgates5 || 0) + (M.resgates10 || 0)}</b><small class="note">${M.resgates5 || 0} de 5 · ${M.resgates10 || 0} de 10 · ${brl(M.desconto)} em descontos</small></div>
+      </div>
+      ${editandoMsgs ? editorMsgs() : ""}
+      <div class="card">
+        <div class="filters cp-filtros">${FILTROS.map(([k, l]) => `<button type="button" class="chip" data-f="${k}" aria-pressed="${filtro === k}">${l} <span>${cont[k] || 0}</span></button>`).join("")}</div>
+        <input class="input" id="cp-busca" type="search" placeholder="Buscar por nome, e-mail ou celular" value="${esc(busca)}" style="margin:10px 0 4px">
+        ${filtro === "convite" ? `<p class="note">Quem comprou nos últimos 90 dias e ainda não tem passaporte (pelo celular do pedido). Mande o convite um por um.</p>` : ""}
+        <div class="cp-lista">${lista.length ? lista.map(filtro === "convite" ? linhaConvite : linhaCliente).join("") : `<p class="empty">Ninguém nesse grupo por enquanto.</p>`}</div>
+      </div>`;
+    $("cp-atual").onclick = async () => { DADOS = null; await render(); };
+    $("cp-msg-ed").onclick = () => { editandoMsgs = !editandoMsgs; render(); };
+    el.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { filtro = b.dataset.f; render(); });
+    $("cp-busca").oninput = e => { busca = e.target.value; const pos = e.target.selectionStart; render().then(() => { const i = $("cp-busca"); i.focus(); i.setSelectionRange(pos, pos); }); };
+    el.querySelectorAll("[data-carimbo]").forEach(b => b.onclick = async () => {
+      const q = +b.dataset.q; b.disabled = true;
+      const { error } = await sb.from("carimbos").insert({ cliente_id: b.dataset.carimbo, qtd: q, motivo: q > 0 ? "Carimbo dado pela equipe" : "Carimbo retirado pela equipe" });
+      if (error) { b.disabled = false; toast(U.erro(error)); return; }
+      toast(q > 0 ? "Carimbo adicionado" : "Carimbo retirado"); DADOS = null; render();
+    });
+    if (editandoMsgs) {
+      const f = $("cp-msgs");
+      $("cpm-padrao").onclick = () => f.querySelectorAll("[data-k]").forEach(t => t.value = PADRAO[t.dataset.k]);
+      f.onsubmit = async e => {
+        e.preventDefault();
+        const novo = {}; f.querySelectorAll("[data-k]").forEach(t => { if (t.value.trim() && t.value.trim() !== PADRAO[t.dataset.k]) novo[t.dataset.k] = t.value.trim(); });
+        const { error } = await sb.from("config").update({ fid_msgs: novo }).eq("id", 1);
+        if (error) { toast(U.erro(error)); return; }
+        ctx.cfg().fid_msgs = novo; editandoMsgs = false; toast("Mensagens salvas"); render();
+      };
+    }
+  }
+  return { render };
+};

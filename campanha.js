@@ -67,7 +67,7 @@ window.Campanha = function (ctx) {
     const d = diasDesde(c.ultimo);
     const texto = preencher(msgs()[g], c);
     return `<div class="cp-cli">
-      <div class="cp-top"><div class="cp-nome"><b>${esc(c.nome || "Sem nome")}</b><small>${esc(c.email || "")}${c.telefone ? ` · ${esc(c.telefone)}` : ""}</small></div>
+      <div class="cp-top"><div class="cp-nome"><button type="button" class="link-nome" data-ficha-uid="${c.id}" data-ficha-tel="${esc(c.telefone || "")}">${esc(c.nome || "Sem nome")}</button><small>${esc(c.email || "")}${c.telefone ? ` · ${esc(c.telefone)}` : ""}</small></div>
         ${pd ? `<span class="pill extra">Prêmio de ${pd} liberado</span>` : g === "quase" ? `<span class="pill ok">Falta${faltam(c) > 1 ? "m" : ""} ${faltam(c)}</span>` : g === "sumido" ? `<span class="pill off">Sem pedir há ${d} dias</span>` : g === "sem_pedido" ? `<span class="pill">Sem pedido</span>` : ""}</div>
       <div class="cp-mid">${bolinhas(c)}<span class="cp-num"><b>${Math.max(0, c.atuais)}</b>/10${c.ciclo ? ` · cartão ${c.ciclo + 1}` : ""}</span></div>
       <div class="cp-info">${c.pedidos} pedido${c.pedidos === 1 ? "" : "s"}${c.ultimo ? ` · último ${U.ddmm(c.ultimo)}` : ""}${Number(c.gasto) ? ` · ${brl(c.gasto)} entregues` : ""}${c.resgates ? ` · ${c.resgates} prêmio${c.resgates > 1 ? "s" : ""} usado${c.resgates > 1 ? "s" : ""}` : ""} · desde ${new Date(c.desde).toLocaleDateString("pt-BR")}</div>
@@ -104,7 +104,7 @@ window.Campanha = function (ctx) {
   function linhaConvite(x) {
     const tel = telWa(x.telefone);
     return `<div class="cp-cli">
-      <div class="cp-top"><div class="cp-nome"><b>${esc(x.nome || "Cliente")}</b><small>${esc(x.telefone)}</small></div><span class="pill">Sem passaporte</span></div>
+      <div class="cp-top"><div class="cp-nome"><button type="button" class="link-nome" data-ficha-tel="${esc(x.telefone)}">${esc(x.nome || "Cliente")}</button><small>${esc(x.telefone)}</small></div><span class="pill">Sem passaporte</span></div>
       <div class="cp-info">${x.pedidos} pedido${x.pedidos === 1 ? "" : "s"} nos últimos 90 dias · último ${U.ddmm(x.ultimo)}</div>
       <div class="acts">${tel ? `<a class="btn btn-wa" href="${linkWa(tel, preencher(msgs().convite, { nome: x.nome, atuais: 0, usou5: false }))}" target="_blank" rel="noopener">Convidar pro passaporte</a>` : ""}</div>
     </div>`;
@@ -153,6 +153,7 @@ window.Campanha = function (ctx) {
     $("cp-msg-ed").onclick = () => { editandoMsgs = !editandoMsgs; render(); };
     el.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { filtro = b.dataset.f; render(); });
     $("cp-busca").oninput = e => { busca = e.target.value; const pos = e.target.selectionStart; render().then(() => { const i = $("cp-busca"); i.focus(); i.setSelectionRange(pos, pos); }); };
+    el.querySelectorAll("[data-ficha-tel],[data-ficha-uid]").forEach(b => b.onclick = () => abrirFicha({ uid: b.dataset.fichaUid || null, tel: b.dataset.fichaTel || "", nome: b.textContent }));
     el.querySelectorAll("[data-editar]").forEach(b => b.onclick = async () => {
       const id = b.dataset.editar;
       if (aberto === id) { aberto = null; render(); return; }
@@ -198,5 +199,48 @@ window.Campanha = function (ctx) {
       };
     }
   }
-  return { render };
+  // ---------- ficha do cliente (abre de qualquer aba) ----------
+  const STATUS_TXT = { aguardando:"Aguardando", confirmado:"Confirmado", entregue:"Entregue", cancelado:"Cancelado" };
+  async function abrirFicha({ uid = null, tel = "", nome = "" }) {
+    let ov = document.getElementById("ficha");
+    if (!ov) {
+      ov = document.createElement("div"); ov.id = "ficha"; ov.className = "ficha-ov"; ov.hidden = true;
+      ov.innerHTML = `<div class="ficha" role="dialog" aria-modal="true" aria-labelledby="ficha-t"><div class="ficha-h"><b id="ficha-t">Cliente</b><button type="button" class="small-btn" data-fx>Fechar</button></div><div class="ficha-b" id="ficha-b"></div></div>`;
+      document.body.appendChild(ov);
+      ov.addEventListener("click", e => { if (e.target === ov || e.target.closest("[data-fx]")) ov.hidden = true; });
+      addEventListener("keydown", e => { if (e.key === "Escape") ov.hidden = true; });
+    }
+    $("ficha-t").textContent = nome || "Cliente";
+    $("ficha-b").innerHTML = `<p class="note">Carregando…</p>`;
+    ov.hidden = false;
+    const { data, error } = await sb.rpc("painel_cliente", { p_uid: uid, p_tel: tel || null });
+    if (error) { $("ficha-b").innerHTML = `<p class="note">${esc(U.erro(error))}</p>`; return; }
+    const cli = data.cliente, ct = data.cartao, peds = data.pedidos || [];
+    const validos = peds.filter(p => p.status !== "cancelado");
+    const gasto = peds.filter(p => p.status === "entregue").reduce((a, p) => a + Number(p.total || 0), 0);
+    const cont = {}; validos.forEach(p => (p.itens || []).forEach(i => cont[i.nome] = (cont[i.nome] || 0) + Number(i.qtd || 0)));
+    const fav = Object.entries(cont).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    const telF = cli?.telefone || tel || peds[0]?.telefone || "";
+    const w = telWa(telF);
+    $("ficha-t").textContent = cli?.nome || nome || peds[0]?.nome || "Cliente";
+    const c = ct ? { ...ct, atuais: ct.atuais } : null;
+    $("ficha-b").innerHTML = `
+      <div class="ficha-top">
+        <div class="note">${cli ? `${esc(cli.email || "")}${cli.email ? " · " : ""}` : ""}${telF ? esc(telF) : "sem celular"}${cli ? ` · membro desde ${new Date(cli.criado_em).toLocaleDateString("pt-BR")}` : ""}</div>
+        ${w ? `<a class="btn btn-wa" href="https://wa.me/${w}" target="_blank" rel="noopener">Abrir WhatsApp</a>` : ""}
+      </div>
+      <div class="kpis ficha-k">
+        <div class="kpi"><span>Pedidos</span><b>${validos.length}</b></div>
+        <div class="kpi"><span>Já gastou</span><b>${brl(gasto)}</b></div>
+        <div class="kpi"><span>Último pedido</span><b>${validos[0] ? U.ddmm(validos[0].data) : "—"}</b></div>
+        <div class="kpi"><span>Passaporte</span><b>${c ? `${Math.max(0, c.atuais)}/10` : "—"}</b><small class="note">${c ? (c.premio10 ? "prêmio de 10 liberado" : c.premio5 ? "prêmio de 5 liberado" : `faltam ${faltam(c)}`) : "sem cadastro"}</small></div>
+      </div>
+      ${c ? `<div class="ficha-pass">${bolinhas(c)}</div>` : `<p class="note">Ainda não tem passaporte.${w ? ` <a href="${linkWa(w, preencher(msgs().convite, { nome: peds[0]?.nome || nome, atuais: 0, usou5: false }))}" target="_blank" rel="noopener">Mandar convite</a>` : ""}</p>`}
+      ${fav.length ? `<p class="ficha-fav"><b>Mais pede:</b> ${fav.map(([n, q]) => `${esc(n)} (${q})`).join(" · ")}</p>` : ""}
+      <h4 class="ficha-h4">Histórico de pedidos</h4>
+      ${peds.length ? `<ul class="ficha-peds">${peds.map(p => `<li class="${p.status}"><div><span><b>#${p.numero}</b> · ${U.ddmm(p.data)} · ${esc(p.modo)}</span><small>${(p.itens || []).map(i => `${i.qtd}× ${esc(i.nome)}`).join(", ")}</small></div><div class="r"><b>${brl(p.total)}</b><small>${STATUS_TXT[p.status] || p.status}${p.pago ? " · pago" : ""}${p.carimbos ? ` · +${p.carimbos} carimbo${p.carimbos > 1 ? "s" : ""}` : ""}${p.premio ? ` · prêmio ${p.premio}` : ""}</small></div></li>`).join("")}</ul>` : `<p class="note">Nenhum pedido encontrado.</p>`}`;
+  }
+  window.abrirFicha = abrirFicha;
+
+  return { render, abrirFicha };
 };

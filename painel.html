@@ -130,6 +130,27 @@ main{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
 @media (max-width:640px){.cp-add{grid-template-columns:1fr 70px}.cp-add .btn{grid-column:1/-1}}
 .cp-del{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
 .btn.perigo{color:var(--danger,#B3261E);border-color:color-mix(in srgb,var(--danger,#B3261E) 40%,transparent)}
+.link-nome{all:unset;cursor:pointer;font-weight:700;color:inherit;text-decoration:underline;text-decoration-color:color-mix(in srgb,currentColor 30%,transparent);text-underline-offset:3px}
+.link-nome:hover{text-decoration-color:currentColor}
+.ped .who.link-nome{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.membro{font-size:11px;font-weight:700;text-decoration:none;background:#D9B45F;color:#5A1422;border-radius:999px;padding:2px 8px}
+.ficha-ov{position:fixed;inset:0;z-index:80;background:rgba(43,26,23,.45);display:flex;justify-content:flex-end}
+.ficha-ov[hidden]{display:none}
+.ficha{width:min(520px,100%);height:100%;background:var(--bg);display:flex;flex-direction:column;box-shadow:-10px 0 30px rgba(0,0,0,.2);animation:fichaEntra .22s ease}
+@keyframes fichaEntra{from{transform:translateX(30px);opacity:0}}
+.ficha-h{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:calc(14px + env(safe-area-inset-top)) 18px 14px;border-bottom:1px solid var(--line);font-size:18px}
+.ficha-b{flex:1;overflow:auto;padding:16px 18px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px}
+.ficha-top{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.ficha-k{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.ficha-pass .cp-dots i{width:18px;height:18px}
+.ficha-fav{margin:0;font-size:14px}
+.ficha-h4{margin:6px 0 0;font-size:15px}
+.ficha-peds{list-style:none;padding:0;margin:0;display:flex;flex-direction:column}
+.ficha-peds li{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.ficha-peds li.cancelado{opacity:.5}
+.ficha-peds li > div{display:flex;flex-direction:column;min-width:0}
+.ficha-peds li .r{text-align:right;flex:none}
+.ficha-peds small{color:var(--muted);font-size:12px}
 .cp-lista{display:flex;flex-direction:column;margin-top:8px}
 .cp-cli{padding:14px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
 .cp-cli:last-child{border-bottom:0}
@@ -787,6 +808,7 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
     }
     el.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { pedFiltro = b.dataset.f; renderPedidos(); });
     el.querySelectorAll("[data-act]").forEach(b => b.onclick = () => acaoPedido(b));
+    el.querySelectorAll("[data-ficha]").forEach(b => b.onclick = () => { const p = PEDS_LISTA.find(x => x.id === b.dataset.ficha); CAMP.abrirFicha({ uid:p.cliente_id || null, tel:p.telefone || "", nome:p.nome }); });
     el.querySelectorAll("[data-frete]").forEach(b => b.onclick = () => {
       const p = PEDS_LISTA.find(x => x.id === b.dataset.frete);
       const cep = ((p.endereco||"").match(/\b(\d{5})-?(\d{3})\b/)||[]).slice(1).join("");
@@ -834,7 +856,7 @@ details.card summary small{display:block;color:var(--muted);font-size:13px}
     const tel = telWa(p.telefone);
     const atraso = p.status==="aguardando" ? (Date.now()-new Date(p.criado_em).getTime())/60000 : 0;
     return `<div class="card ped ${p.status}">
-      <div class="ph"><div><div class="num">#${p.numero}</div><div class="who">${esc(p.nome)}</div>
+      <div class="ph"><div><div class="num">#${p.numero}</div><button type="button" class="who link-nome" data-ficha="${p.id}" title="Ver histórico do cliente">${esc(p.nome)}${p.cliente_id?` <span class="membro" title="Tem Passaporte do panini">Passaporte</span>`:""}</button>
         <div class="meta">${tel?`<a href="https://wa.me/${tel}" target="_blank" rel="noopener">${esc(p.telefone)}</a>`:"sem telefone"}${p.canal!=="site"?` · <b>${CANAIS[p.canal]}</b>`:""}${p.tipo==="extra"?" · venda extra":""}</div></div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><span class="st ${p.status}">${STATUS[p.status]}</span>${p.status==="confirmado"&&p.andamento?`<span class="and">${{preparando:"Em preparo",a_caminho:"Saiu para entrega",pronto:"Pronto p/ retirar"}[p.andamento]}</span>`:""}
         ${p.status==="aguardando"?`<span class="wait ${atraso>=60?"late":""}">há ${haQuanto(p.criado_em)}</span>`:""}</div></div>
